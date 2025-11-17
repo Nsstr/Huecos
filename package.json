@@ -1,25 +1,23 @@
 {
   "name": "huecos-web",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "App para gestión de huecos en inventario",
+  "main": "api/cargar-datos.js",
+  
+  
+  "files": [
+    "api/**",
+    "lib/datav2.csv",
+    "lib/utils.js",
+    "public/**"
+  ],
+  
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node api/cargar-datos.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Nsstr/Huecos.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/Nsstr/Huecos/issues"
-  },
-  "homepage": "https://github.com/Nsstr/Huecos#readme",
-  "description": "",
   "dependencies": {
-    "@supabase/supabase-js": "^2.81.1",
-    "chromium": "^3.0.3",
-    "playwright-core": "^1.56.1"
+    "@supabase/supabase-js": "^2.x.x",
+    "chromium": "^3.0.0",
+    "playwright-core": "^1.x.x"
   }
 }

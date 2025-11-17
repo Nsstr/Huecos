@@ -12,12 +12,13 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SER
 function loadDatav2Map() {
     console.log('Cargando DATAV2 desde CSV...');
     
-    // Ruta absoluta al archivo datav2.csv dentro de la carpeta /lib
-    const csvPath = path.resolve(__dirname, '../lib/datav2.csv');
+    // **NUEVA RUTA:** Usamos __dirname para asegurarnos que la base sea el directorio 'api'
+    const csvPath = path.join(__dirname, '..', 'lib', 'datav2.csv'); 
 
     if (!fs.existsSync(csvPath)) {
         console.error(`ERROR: Archivo CSV no encontrado en: ${csvPath}`);
-        return {}; 
+        // Retornamos un objeto vacío, pero es mejor lanzar un error para verlo en el log de Vercel.
+        throw new Error(`[Ruta Fallida] No se encontró el archivo datav2.csv en: ${csvPath}`); 
     }
 
     // Leer el archivo CSV completo de forma síncrona (esto ocurre una vez por cold start)
