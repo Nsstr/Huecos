@@ -1,0 +1,25 @@
+{
+  "name": "huecos-web",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nsstr/Huecos.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Nsstr/Huecos/issues"
+  },
+  "homepage": "https://github.com/Nsstr/Huecos#readme",
+  "description": "",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.81.1",
+    "chromium": "^3.0.3",
+    "playwright-core": "^1.56.1"
+  }
+}
