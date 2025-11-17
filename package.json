@@ -9,7 +9,7 @@
       "use": "@vercel/node",
       "config": {
    
-        "includeFiles": ["lib/DATAV2.csv"] 
+        "includeFiles": ["lib/datav2.csv"] 
       }
     }
   ],
