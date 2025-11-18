@@ -131,7 +131,18 @@ module.exports = async (req, res) => {
     return res.status(200).json({ success: true, count: filasProcesadas.length });
 
   } catch (error) {
-    console.error('Error fatal en cargar-datos:', error.message);
-    return res.status(500).json({ success: false, message: `Error interno del servidor: ${error.message}.` });
+    // 1. Determina un mensaje de error seguro.
+    // Intenta leer .message. Si falla, convierte el objeto entero a cadena.
+    const errorMessage = error && error.message 
+                         ? error.message 
+                         : (typeof error === 'string' ? error : 'Error desconocido o no estructurado en la ejecución principal.');
+
+    console.error('Error fatal en cargar-datos:', errorMessage);
+    
+    // 2. Devuelve la respuesta 500 al cliente
+    return res.status(500).json({ 
+        success: false, 
+        message: `Error interno del servidor: ${errorMessage}.` 
+    });
   }
 };
