@@ -1,0 +1,5 @@
+# Dependencias de Node
+/node_modules
+/npm-debug.log
+.env
+.vercel
