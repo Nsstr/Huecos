@@ -2,13 +2,12 @@
   "name": "huecos-web",
   "version": "1.0.0",
   "description": "App para gestión de huecos en inventario",
-  "main": "api/cargar-datos.js",
-  "scripts": {
+  "main": "api/cargar-datos.js", 
+    "scripts": {
     "start": "node api/cargar-datos.js"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.x.x",
-    "fs": "0.0.1-security",
-    "path": "^0.12.7"
+    "@supabase/supabase-js": "^2.x.x"
+  
   }
 }
