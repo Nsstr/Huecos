@@ -1,26 +1,14 @@
 {
-  "builds": [
-    {
-      "src": "public/**/*",
-      "use": "@vercel/static-build"
-    },
-    {
-      "src": "api/**/*.js",
-      "use": "@vercel/node",
-      "config": {
-   
-        "includeFiles": ["lib/datav2.csv"] 
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/",
-      "dest": "/public/index.html"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/public/$1"
-    }
-  ]
+  "name": "huecos-web",
+  "version": "1.0.0",
+  "description": "App para gestión de huecos en inventario",
+  "main": "api/cargar-datos.js",
+  "scripts": {
+    "start": "node api/cargar-datos.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.x.x",
+    "fs": "0.0.1-security",
+    "path": "^0.12.7"
+  }
 }
