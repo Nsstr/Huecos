@@ -19,7 +19,7 @@ async function loadDatav2Map() {
     
     // Consulta los datos maestros de la tabla 'datos_maestros' (Nombre de tabla que debe crear)
     const { data: rawData, error } = await supabase
-        .from('datos_maestros') 
+        .from('data') 
         .select('codigo_interno, departamento, codigo_ean'); 
 
     if (error) {
