@@ -17,31 +17,29 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SER
 async function loadDatav2Map() {
     console.log('Iniciando carga de DATAV2 desde SUPABASE...');
     
-    // Nombres EXACTOS de las columnas de su tabla 'data', encerrados en comillas dobles.
-    const CODIGO_COL = '"SKU ID"'; 
-    const DEPARTAMENTO_COL = '"Clase DESC"'; // Usaremos Clase DESC como 'departamento' para mapeo
-    const EAN_COL = '"Código SKU ID"'; 
+    // Nombres EXACTOS de las columnas de su tabla 'data' (usando comillas dobles debido a espacios/mayúsculas).
+    const columnasSQL = '"SKU ID", "Clase DESC", "Código SKU ID"'; 
     
-    // La consulta ahora usa los nombres de columna con comillas dobles
+    // Simplificamos el .select() para evitar errores de concatenación
     const { data: rawData, error } = await supabase
-        .from('data') 
-        .select(`${CODIGO_COL}, ${DEPARTAMENTO_COL}, ${EAN_COL}`); 
+        .from('data') // Usando el nombre de tabla 'data'
+        .select(columnasSQL); // Pasamos la cadena de columnas directamente
 
     if (error) {
-        // Esto registrará el error de Supabase (si es que existe)
+        // Esto DEBE capturar el error SQL real si existe.
         console.error('Error de Consulta en Supabase:', error);
+        // Lanzamos el error para que el catch lo registre.
         throw new Error(`FALLO_SUPABASE: No se pudo cargar el catálogo. Mensaje: ${error.message}`);
     }
 
     const dataMap = {};
     rawData.forEach(item => {
-        // Mapeamos los datos de la base de datos a los nombres que espera su Handler 
-        const codigoInterno = item['SKU ID'] ? String(item['SKU ID']).trim() : ''; // Usamos el nombre real de la columna para acceder al valor
+        const codigoInterno = item['SKU ID'] ? String(item['SKU ID']).trim() : '';
         
         if (codigoInterno) {
             dataMap[codigoInterno] = {
                 codigo_interno: codigoInterno,
-                departamento: item['Clase DESC'] || 'N/A', // Usamos Clase DESC como departamento
+                departamento: item['Clase DESC'] || 'N/A', 
                 codigo_ean: item['Código SKU ID'] || '0'
             };
         }
@@ -50,7 +48,6 @@ async function loadDatav2Map() {
     console.log(`DATAV2 cargado. ${Object.keys(dataMap).length} registros mapeados.`);
     return dataMap;
 }
-
 // Carga los datos maestros una vez (promesa) en el arranque en frío.
 // Esto mejora el rendimiento, ya que la consulta solo se ejecuta una vez por instancia de función.
 let mapaDataV2Promise = loadDatav2Map().catch(error => {
