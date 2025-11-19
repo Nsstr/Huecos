@@ -17,25 +17,32 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SER
 async function loadDatav2Map() {
     console.log('Iniciando carga de DATAV2 desde SUPABASE...');
     
-    // Consulta los datos maestros de la tabla 'datos_maestros' (Nombre de tabla que debe crear)
+    // Nombres EXACTOS de las columnas de su tabla 'data', encerrados en comillas dobles.
+    const CODIGO_COL = '"SKU ID"'; 
+    const DEPARTAMENTO_COL = '"Clase DESC"'; // Usaremos Clase DESC como 'departamento' para mapeo
+    const EAN_COL = '"Código SKU ID"'; 
+    
+    // La consulta ahora usa los nombres de columna con comillas dobles
     const { data: rawData, error } = await supabase
         .from('data') 
-        .select('codigo_interno, departamento, codigo_ean'); 
+        .select(`${CODIGO_COL}, ${DEPARTAMENTO_COL}, ${EAN_COL}`); 
 
     if (error) {
-        console.error('Error al consultar datos_maestros en Supabase:', error);
+        // Esto registrará el error de Supabase (si es que existe)
+        console.error('Error de Consulta en Supabase:', error);
         throw new Error(`FALLO_SUPABASE: No se pudo cargar el catálogo. Mensaje: ${error.message}`);
     }
 
     const dataMap = {};
     rawData.forEach(item => {
-        const codigoInterno = item.codigo_interno ? String(item.codigo_interno).trim() : '';
+        // Mapeamos los datos de la base de datos a los nombres que espera su Handler 
+        const codigoInterno = item['SKU ID'] ? String(item['SKU ID']).trim() : ''; // Usamos el nombre real de la columna para acceder al valor
         
         if (codigoInterno) {
             dataMap[codigoInterno] = {
                 codigo_interno: codigoInterno,
-                departamento: item.departamento || 'N/A',
-                codigo_ean: item.codigo_ean || '0'
+                departamento: item['Clase DESC'] || 'N/A', // Usamos Clase DESC como departamento
+                codigo_ean: item['Código SKU ID'] || '0'
             };
         }
     });
