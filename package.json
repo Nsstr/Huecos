@@ -1,21 +1,17 @@
 {
-  "name": "huecos-web",
+  "name": "huecos-nextjs",
   "version": "1.0.0",
-  "description": "App para gestión de huecos en inventario usando Vercel y Supabase.",
-  "main": "api/cargar-datos.js",
+  "private": true,
   "scripts": {
-    "start": "node api/cargar-datos.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.x.x"
-  },
-  "keywords": [
-    "vercel",
-    "supabase",
-    "serverless",
-    "node"
-  ],
-  "author": "",
-  "license": "ISC"
+    "next": "13.5.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "pdfkit": "0.13.0",
+    "@supabase/supabase-js": "2.32.0"
+  }
 }
