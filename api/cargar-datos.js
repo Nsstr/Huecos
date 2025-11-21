@@ -3,7 +3,7 @@
 const { createClient } = require('@supabase/supabase-js');
 const { convertirFormatoFecha, detectarDelimitador } = require('../lib/utils');
 
-// --- 1. CONFIGURACIÓN DE SUPABASE ---
+// CONFIG SUPABASE
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
@@ -13,17 +13,18 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-// --- 2. CACHE INTERNO ---
+// CACHE
 let mapaDataV2Cache = null;
 
-// --- 3. CARGA DE CATÁLOGO ---
+// CARGA CATÁLOGO
 async function getMapaDataV2() {
     if (mapaDataV2Cache) return mapaDataV2Cache;
 
     try {
         console.log("Cargando catálogo desde Supabase...");
 
-        const columnasSQL = '"SKU ID", "Clase DESC", "Código SKU"';
+        // ⭐ CORREGIDO: columna correcta
+        const columnasSQL = '"SKU ID", "Clase DESC", "Código SKU ID"';
 
         const { data, error } = await supabase
             .from('data')
@@ -39,7 +40,8 @@ async function getMapaDataV2() {
             mapa[codigo] = {
                 codigo_interno: codigo,
                 departamento: item['Clase DESC'] || 'N/A',
-                codigo_ean: item['Código SKU'] || '0'
+                // ⭐ CORREGIDO: columna correcta
+                codigo_ean: item['Código SKU ID'] || '0'
             };
         });
 
@@ -53,9 +55,9 @@ async function getMapaDataV2() {
     }
 }
 
-
-// --- 4. HANDLER PRINCIPAL ---
+// HANDLER PRINCIPAL
 module.exports = async (req, res) => {
+
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method Not Allowed' });
     }
@@ -64,7 +66,10 @@ module.exports = async (req, res) => {
         const mapaDataV2 = await getMapaDataV2();
 
         if (!mapaDataV2 || Object.keys(mapaDataV2).length === 0) {
-            return res.status(503).json({ success: false, message: "Catálogo no disponible." });
+            return res.status(503).json({
+                success: false,
+                message: "Catálogo no disponible."
+            });
         }
 
         const { rawData, fechaString } = req.body || {};
@@ -78,16 +83,19 @@ module.exports = async (req, res) => {
 
         const fecha = convertirFormatoFecha(fechaString);
         if (!fecha) {
-            return res.status(400).json({ success: false, message: "Fecha inválida." });
+            return res.status(400).json({
+                success: false,
+                message: "Fecha inválida."
+            });
         }
 
-        // --- PROCESAMIENTO DE TEXTO ---
+        // PROCESO
         const delimitador = detectarDelimitador(rawData);
         const filas = rawData.trim().split('\n').filter(l => l.trim() !== '');
         const filasProcesadas = [];
 
         const INDEX_CODIGO = 0;
-        const INDEX_CANTIDAD = 1; // ← CORREGIDO
+        const INDEX_CANTIDAD = 1;
 
         for (const fila of filas) {
             const cols = fila.split(delimitador);
@@ -110,7 +118,7 @@ module.exports = async (req, res) => {
             });
         }
 
-        // --- INSERT ---
+        // INSERT
         if (filasProcesadas.length > 0) {
             const { error } = await supabase
                 .from('scaneo_huecos')
