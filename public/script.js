@@ -1,9 +1,9 @@
 // Configuración de Supabase - REEMPLAZA con tus credenciales reales
-const SUPABASE_URL = 'https://tu-proyecto.supabase.co';
+const SUPABASE_URL = 'https://xeqhwchhcnpdblneautf.supabase.co';
 const SUPABASE_ANON_KEY = 'tu-anon-key-publica';
 
 // Inicializar Supabase solo si las credenciales no son las de ejemplo
-if (SUPABASE_URL !== 'https://tu-proyecto.supabase.co' && SUPABASE_ANON_KEY !== 'tu-anon-key-publica') {
+if (SUPABASE_URL !== 'https://tu-proyecto.supabase.co' && SUPABASE_ANON_KEY !== 'sb_publishable_ZXas9fIbkycycqnn2P2jww_z2ebjJc1') {
     const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 } else {
     console.warn('Configura las credenciales de Supabase en script.js');
