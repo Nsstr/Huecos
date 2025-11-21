@@ -1,17 +1,16 @@
 {
-  "name": "huecos-nextjs",
+  "name": "huecos-app",
   "version": "1.0.0",
-  "private": true,
+  "description": "Sistema de gestión de huecos en góndola",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
+    "dev": "vercel dev"
   },
   "dependencies": {
-    "next": "13.5.0",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
-    "pdfkit": "0.13.0",
-    "@supabase/supabase-js": "2.32.0"
+    "@supabase/supabase-js": "^2.38.0",
+    "puppeteer-core": "^21.5.2",
+    "chrome-aws-lambda": "^10.1.0"
+  },
+  "devDependencies": {
+    "vercel": "^28.16.0"
   }
 }
