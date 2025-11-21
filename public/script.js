@@ -3,7 +3,7 @@ const SUPABASE_URL = 'https://xeqhwchhcnpdblneautf.supabase.co';
 const SUPABASE_ANON_KEY = 'tu-anon-key-publica';
 
 // Inicializar Supabase solo si las credenciales no son las de ejemplo
-if (SUPABASE_URL !== 'https://tu-proyecto.supabase.co' && SUPABASE_ANON_KEY !== 'sb_publishable_ZXas9fIbkycycqnn2P2jww_z2ebjJc1') {
+if (SUPABASE_URL !== 'https://tu-proyecto.supabase.co' && SUPABASE_ANON_KEY !== 'sb_secret_D6nE35MKkEIN5zcgxqlZAQ_Ce_KW3nY') {
     const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 } else {
     console.warn('Configura las credenciales de Supabase en script.js');
