@@ -1,6 +1,6 @@
 // Configuración de Supabase - REEMPLAZA con tus credenciales reales
 const SUPABASE_URL = 'https://xeqhwchhcnpdblneautf.supabase.co';
-const SUPABASE_ANON_KEY = 'tu-anon-key-publica';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhlcWh3Y2hoY25wZGJsbmVhdXRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1MDQ4NzMsImV4cCI6MjA3OTA4MDg3M30.26qq4eEy-gx9Rr6DsOeE_uSpHneu1PSwXvhcnj_P7CY';
 
 // Inicializar Supabase solo si las credenciales no son las de ejemplo
 if (SUPABASE_URL !== 'https://tu-proyecto.supabase.co' && SUPABASE_ANON_KEY !== 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhlcWh3Y2hoY25wZGJsbmVhdXRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1MDQ4NzMsImV4cCI6MjA3OTA4MDg3M30.26qq4eEy-gx9Rr6DsOeE_uSpHneu1PSwXvhcnj_P7CY') {
