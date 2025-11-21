@@ -5,7 +5,7 @@
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "public"
+        "distDir": "dist"
       }
     },
     {
@@ -20,11 +20,9 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/public/$1"
+      "dest": "/dist/$1"
     }
   ],
-  "env": {
-    "SUPABASE_URL": "@supabase_url",
-    "SUPABASE_ANON_KEY": "@supabase_anon_key"
-  }
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist"
 }
