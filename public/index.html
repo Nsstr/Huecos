@@ -1704,12 +1704,7 @@ function mostrarNotificacionNavegacion(mensaje, duracion = 8000) {
                 
                 // Mostrar resultado
                 progreso.style.display = 'none';
-                resultado.innerHTML = `
-                    <div class="success" style="margin-top: 20px;">
-                        <p>✅ Reporte generado correctamente!</p>
-                    </div>
-                `;
-
+                mostrarEstado("✅ Reporte generado correctamente!", "success");
                 // Auto-abrir en nueva pestaña para imprimir
                 setTimeout(() => {
                     window.open(pdfUrl, '_blank');
@@ -1717,7 +1712,7 @@ function mostrarNotificacionNavegacion(mensaje, duracion = 8000) {
 
             } catch (error) {
                 console.error('❌ Error generando PDF:', error);
-                document.getElementById('progreso-reporte').innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+                mostrarEstado(`❌ Error generando PDF: ${error.message}`, "error");
             }
         }
 
