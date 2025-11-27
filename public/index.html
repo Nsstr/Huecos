@@ -542,7 +542,7 @@
                 <div class="date-selector">
                     <label for="fecha-reporte">Fecha:</label>
                     <input type="date" id="fecha-reporte">
-                    <button id="btn-actualizar-reporte">Actualizar</button>
+                   
                 </div>
                 <div class="form-group">
                     <label for="pasillo-reporte">Pasillo (opcional):</label>
@@ -1743,17 +1743,17 @@ function mostrarNotificacionNavegacion(mensaje, duracion = 8000) {
                 mostrarResumenDesdeDatosCargados();
             });
             document.getElementById('btn-reporte').addEventListener('click', () => {
-                mostrarSeccion('reporte');
-                actualizarSelectorPasillos();
-                actualizarFechaReporte();
-            });
+    mostrarSeccion('reporte');
+    actualizarSelectorPasillos();
+    // La fecha se actualiza automáticamente cuando cargas datos
+});
             document.getElementById('btn-historico').addEventListener('click', () => mostrarSeccion('historico'));
             
             // Configurar eventos
             document.getElementById('btn-cargar-datos').addEventListener('click', procesarDatosCSV);
             document.getElementById('btn-actualizar-resumen').addEventListener('click', mostrarResumenDesdeDatosCargados);
             document.getElementById('btn-cargar-desde-firebase').addEventListener('click', cargarYMostrarDesdeFirebase);
-            document.getElementById('btn-actualizar-reporte').addEventListener('click', actualizarFechaReporte);
+            
             document.getElementById('texto-csv').addEventListener('input', actualizarContadorLineas);
             
             document.getElementById('btn-generar-pdf').addEventListener('click', generarReportePDF);
