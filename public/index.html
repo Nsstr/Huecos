@@ -1755,11 +1755,7 @@ function mostrarNotificacionNavegacion(mensaje, duracion = 8000) {
             document.getElementById('btn-cargar-desde-firebase').addEventListener('click', cargarYMostrarDesdeFirebase);
             document.getElementById('btn-actualizar-reporte').addEventListener('click', actualizarFechaReporte);
             document.getElementById('texto-csv').addEventListener('input', actualizarContadorLineas);
-            document.getElementById('link-ver-resumen').addEventListener('click', function(e) {
-                e.preventDefault();
-                mostrarSeccion('resumen');
-                mostrarResumenDesdeDatosCargados();
-            });
+            
             document.getElementById('btn-generar-pdf').addEventListener('click', generarReportePDF);
             document.getElementById('btn-cargar-historico').addEventListener('click', cargarHistoricoDesdeFirebase);
 
