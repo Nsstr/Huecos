@@ -484,46 +484,63 @@
 
         let fechaActual = obtenerFechaActual();
 
-          // REEMPLAZA las funciones de Google Sheets con estas:
-
+          // CONFIGURACIÓN GOOGLE SHEETS - FUNCIONES CORREGIDAS
 async function guardarEnGoogleSheets(datosProcesados) {
-    try {
-        console.log('💾 Guardando en Google Sheets...');
-        
-        const productos = datosProcesados.productosConInfo || [];
-        const fecha = datosProcesados.fecha;
-        
-        if (productos.length === 0) {
-            console.log('⚠️ No hay productos para guardar');
-            return false;
-        }
+    return new Promise((resolve) => {
+        try {
+            console.log('💾 Guardando en Google Sheets...');
+            
+            const productos = datosProcesados.productosConInfo || [];
+            const fecha = datosProcesados.fecha;
+            
+            if (productos.length === 0) {
+                console.log('⚠️ No hay productos para guardar');
+                resolve(false);
+                return;
+            }
 
-        const response = await fetch(GOOGLE_SHEETS_API, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
+            // Para guardar, necesitamos usar un formulario temporal ya que JSONP solo funciona con GET
+            // Creamos un iframe temporal para enviar los datos
+            const tempForm = document.createElement('form');
+            tempForm.style.display = 'none';
+            tempForm.method = 'POST';
+            tempForm.action = GOOGLE_SHEETS_API;
+            tempForm.target = 'tempIframe';
+            
+            // Crear iframe temporal
+            const tempIframe = document.createElement('iframe');
+            tempIframe.name = 'tempIframe';
+            tempIframe.style.display = 'none';
+            
+            // Preparar datos para enviar
+            const dataInput = document.createElement('input');
+            dataInput.name = 'data';
+            dataInput.value = JSON.stringify({
                 action: 'guardar',
                 fecha: fecha,
                 productos: productos
-            })
-        });
-
-        const result = await response.json();
-        
-        if (result.success) {
-            console.log(`✅ Datos guardados en Sheets: ${result.registros} productos`);
-            return true;
-        } else {
-            console.error('❌ Error guardando en Sheets:', result.error);
-            return false;
+            });
+            
+            tempForm.appendChild(dataInput);
+            document.body.appendChild(tempIframe);
+            document.body.appendChild(tempForm);
+            
+            // Enviar formulario
+            tempForm.submit();
+            
+            // Limpiar después de un tiempo
+            setTimeout(() => {
+                document.body.removeChild(tempIframe);
+                document.body.removeChild(tempForm);
+                console.log('✅ Datos enviados a Google Sheets (método alternativo)');
+                resolve(true);
+            }, 3000);
+            
+        } catch (error) {
+            console.error('❌ Error guardando en Google Sheets:', error);
+            resolve(false);
         }
-        
-    } catch (error) {
-        console.error('❌ Error guardando en Google Sheets:', error);
-        return false;
-    }
+    });
 }
 
 async function cargarDesdeGoogleSheets(fecha) {
@@ -538,7 +555,7 @@ async function cargarDesdeGoogleSheets(fecha) {
             delete window[callbackName];
             document.body.removeChild(script);
             
-            if (data.success && data.productos.length > 0) {
+            if (data && data.success && data.productos && data.productos.length > 0) {
                 console.log(`✅ Datos cargados desde Sheets: ${data.productos.length} productos`);
                 
                 // Reconstruir la estructura de datosCargados
