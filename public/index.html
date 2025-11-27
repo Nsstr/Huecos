@@ -42,6 +42,9 @@
         };
         
         console.log('🔥 Firebase SDK cargado correctamente');
+        
+        // Marcar que Firebase está listo
+        window.firebaseLoaded = true;
     </script>
 
     <style>
@@ -346,6 +349,12 @@
             border: 1px solid #f5c6cb;
         }
         
+        .firebase-config {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
         @media (max-width: 768px) {
             nav {
                 flex-direction: column;
@@ -501,26 +510,55 @@
                     throw new Error('Firebase no se inicializó correctamente');
                 }
                 
-                // Hacer una consulta simple para verificar la conexión
-                const testQuery = window.firebase.query(window.firebase.collection(window.firebase.db, "test"));
-                await window.firebase.getDocs(testQuery);
+                // Intentar una operación simple de lectura
+                console.log('🔍 Probando conexión con Firestore...');
+                const testCollection = window.firebase.collection(window.firebase.db, "test_connection");
+                const testQuery = window.firebase.query(testCollection);
                 
-                firebaseReady = true;
-                statusEl.className = 'firebase-status firebase-connected';
-                statusEl.innerHTML = '✅ Conectado a Firebase correctamente';
-                
-                setTimeout(() => {
-                    statusEl.style.display = 'none';
-                }, 3000);
-                
-                console.log('✅ Firebase inicializado correctamente');
-                return true;
+                try {
+                    await window.firebase.getDocs(testQuery);
+                    firebaseReady = true;
+                    statusEl.className = 'firebase-status firebase-connected';
+                    statusEl.innerHTML = '✅ Conectado a Firebase correctamente';
+                    
+                    setTimeout(() => {
+                        statusEl.style.display = 'none';
+                    }, 3000);
+                    
+                    console.log('✅ Firebase inicializado correctamente');
+                    return true;
+                } catch (firestoreError) {
+                    // Error específico de Firestore (probablemente permisos)
+                    if (firestoreError.code === 'permission-denied' || firestoreError.message.includes('permission')) {
+                        throw new Error('PERMISSIONS_ERROR: ' + firestoreError.message);
+                    } else {
+                        throw firestoreError;
+                    }
+                }
                 
             } catch (error) {
-                console.warn('⚠️ Firebase no disponible, usando almacenamiento local:', error);
+                console.warn('⚠️ Firebase no disponible:', error);
                 const statusEl = document.getElementById('firebase-status');
-                statusEl.className = 'firebase-status firebase-error';
-                statusEl.innerHTML = '⚠️ Modo local: Firebase no disponible - Los datos se guardarán localmente';
+                
+                if (error.message.includes('PERMISSIONS_ERROR')) {
+                    statusEl.className = 'firebase-status firebase-config';
+                    statusEl.innerHTML = `
+                        ⚠️ <strong>Configuración de Firestore requerida</strong><br>
+                        <small style="display: block; margin-top: 8px;">
+                        1. Ve a <a href="https://console.firebase.google.com/project/huecos-96c8c/firestore/rules" target="_blank" style="color: #856404; text-decoration: underline;">Firebase Console > Firestore > Reglas</a><br>
+                        2. Reemplaza las reglas con:<br>
+                        <code style="background: #fff; padding: 2px 4px; border-radius: 3px; display: inline-block; margin: 4px 0;">
+                        allow read, write: if true;
+                        </code><br>
+                        3. Haz clic en "Publicar"<br>
+                        4. Recarga esta página
+                        </small>
+                    `;
+                } else {
+                    statusEl.className = 'firebase-status firebase-error';
+                    statusEl.innerHTML = '⚠️ Modo local: Firebase no disponible - Los datos se guardarán localmente';
+                }
+                
                 firebaseReady = false;
                 return false;
             }
@@ -530,11 +568,14 @@
         function esperarFirebase() {
             return new Promise((resolve, reject) => {
                 let intentos = 0;
-                const maxIntentos = 50; // 5 segundos máximo
+                const maxIntentos = 50;
                 
                 const checkFirebase = () => {
                     intentos++;
                     if (window.firebase && window.firebase.db) {
+                        resolve();
+                    } else if (window.firebaseLoaded && intentos >= 10) {
+                        // Si Firebase marcó que se cargó pero no está disponible
                         resolve();
                     } else if (intentos >= maxIntentos) {
                         reject(new Error('Timeout: Firebase no se cargó en 5 segundos'));
@@ -580,12 +621,14 @@
                 // Guardar productos en subcolección
                 const productosCollectionRef = collection(fechaDocRef, "productos");
                 
-                // Guardar productos en lotes para mejor performance
-                const batchSize = 100;
+                // Guardar productos en lotes más pequeños para mayor estabilidad
+                const batchSize = 50;
                 for (let i = 0; i < productos.length; i += batchSize) {
                     const batch = productos.slice(i, i + batchSize);
-                    const promises = batch.map(producto => 
-                        addDoc(productosCollectionRef, {
+                    
+                    // Guardar uno por uno para mejor manejo de errores
+                    for (const producto of batch) {
+                        await addDoc(productosCollectionRef, {
                             sku: producto.sku || '',
                             descripcion: producto.descripcion || '',
                             deptId: producto.deptId || '',
@@ -593,11 +636,10 @@
                             stock: producto.stock || 0,
                             upc: producto.upc || '',
                             timestamp: new Date().toISOString()
-                        })
-                    );
+                        });
+                    }
                     
-                    await Promise.all(promises);
-                    console.log(`✅ Lote ${i/batchSize + 1} guardado: ${batch.length} productos`);
+                    console.log(`✅ Lote ${Math.floor(i/batchSize) + 1} guardado: ${batch.length} productos`);
                 }
 
                 console.log(`✅ Datos guardados en Firebase: ${productos.length} productos`);
@@ -606,7 +648,13 @@
                 
             } catch (error) {
                 console.error('❌ Error guardando en Firebase:', error);
-                mostrarEstado(`❌ Error guardando en Firebase: ${error.message}`, "error");
+                
+                if (error.code === 'permission-denied') {
+                    mostrarEstado('❌ Error de permisos: Configura las reglas de Firestore', "error");
+                } else {
+                    mostrarEstado(`❌ Error guardando en Firebase: ${error.message}`, "error");
+                }
+                
                 return false;
             }
         }
@@ -652,7 +700,13 @@
                 
             } catch (error) {
                 console.error('❌ Error cargando desde Firebase:', error);
-                mostrarEstado(`❌ Error cargando desde Firebase: ${error.message}`, "error");
+                
+                if (error.code === 'permission-denied') {
+                    mostrarEstado('❌ Error de permisos al cargar desde Firebase', "error");
+                } else {
+                    mostrarEstado(`❌ Error cargando desde Firebase: ${error.message}`, "error");
+                }
+                
                 return null;
             }
         }
