@@ -334,6 +334,69 @@
     animation: slideIn 0.3s ease;
 }
         
+
+/* Notificaciones flotantes */
+.notificacion-flotante {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000; /* Muy alto para estar por encima de todo */
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-width: 400px;
+    font-weight: 600;
+    animation: slideIn 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.notificacion-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.notificacion-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.notificacion-processing {
+    background-color: #cce7ff;
+    color: #004085;
+    border: 1px solid #b3d7ff;
+}
+
+.notificacion-warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
         .loading {
             display: inline-block;
             width: 20px;
@@ -456,9 +519,7 @@
                 </div>
                 <button id="btn-cargar-datos">Procesar CSV</button>
                 <div id="status"></div>
-                <div id="auto-navigate" class="auto-navigate" style="display: none;">
-                    <p>✅ Datos procesados correctamente. <a href="#" id="link-ver-resumen">Ver resumen ahora</a> o espera 3 segundos...</p>
-                </div>
+                <div id="auto-navigate" class="auto-navigate" style="display: none;"></div>
             </section>
 
             <!-- Sección Resumen -->
@@ -1021,11 +1082,26 @@ if (firebaseReady) {
 
                 mostrarEstado(mensajeExito, "success");
 
-                const autoNavigateEl = document.getElementById('auto-navigate');
-autoNavigateEl.style.display = 'block';
+                // En lugar de mostrar el elemento auto-navigate, usar notificación flotante
+mostrarNotificacionNavegacion(`
+    ✅ Datos procesados correctamente. 
+    <br><br>
+    <a href="#" id="link-ver-resumen-flotante" style="color: #004085; font-weight: bold; text-decoration: underline;">
+        Ver resumen ahora
+    </a> o espera 3 segundos...
+`, 8000);
+
+// Y agrega el event listener para el nuevo link
 setTimeout(() => {
-    autoNavigateEl.style.display = 'none';
-}, 8000);
+    const link = document.getElementById('link-ver-resumen-flotante');
+    if (link) {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            mostrarSeccion('resumen');
+            mostrarResumenDesdeDatosCargados();
+        });
+    }
+}, 100);
 
 // Navegación INMEDIATA (no esperar 3 segundos)
 setTimeout(() => {
@@ -1219,20 +1295,46 @@ ${lineasSinDepto.join('\n')}</pre>
             `;
         }
 
-        function mostrarEstado(mensaje, tipo) {
-    const statusEl = document.getElementById('status');
-    if (statusEl) {
-        statusEl.innerHTML = mensaje;
-        statusEl.className = tipo;
-        statusEl.style.display = 'block';
-        
-        // Ocultar automáticamente después de 5 segundos para todos los tipos
+       function mostrarEstado(mensaje, tipo, duracion = 5000) {
+    // Crear elemento de notificación
+    const notificacion = document.createElement('div');
+    notificacion.className = `notificacion-flotante notificacion-${tipo}`;
+    notificacion.innerHTML = mensaje;
+    
+    // Agregar al body (por encima de todo)
+    document.body.appendChild(notificacion);
+    
+    // Auto-eliminar después del tiempo especificado
+    setTimeout(() => {
+        notificacion.style.animation = 'slideOut 0.3s ease';
         setTimeout(() => {
-            statusEl.style.display = 'none';
-        }, 5000);
-    }
+            if (notificacion.parentNode) {
+                notificacion.parentNode.removeChild(notificacion);
+            }
+        }, 300);
+    }, duracion);
+    
+    return notificacion;
 }
 
+function mostrarNotificacionNavegacion(mensaje, duracion = 8000) {
+    const notificacion = document.createElement('div');
+    notificacion.className = 'notificacion-flotante notificacion-warning';
+    notificacion.innerHTML = mensaje;
+    
+    document.body.appendChild(notificacion);
+    
+    setTimeout(() => {
+        notificacion.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => {
+            if (notificacion.parentNode) {
+                notificacion.parentNode.removeChild(notificacion);
+            }
+        }, 300);
+    }, duracion);
+    
+    return notificacion;
+}
         function actualizarSelectorPasillos() {
             const selector = document.getElementById('pasillo-reporte');
             selector.innerHTML = '<option value="">Todos los pasillos</option>';
