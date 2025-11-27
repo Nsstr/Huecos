@@ -375,6 +375,18 @@
                 gap: 10px;
             }
         }
+
+        .contador-lineas {
+    font-size: 14px;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-top: 5px;
+    text-align: right;
+    padding: 2px 8px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    display: inline-block;
+}
     </style>
     
     <!-- Incluir jsPDF y autoTable -->
@@ -815,13 +827,18 @@ async function guardarEnFirebaseEnSegundoPlano(datosProcesados) {
         }
 
         function actualizarContadorLineas() {
-            const texto = document.getElementById('texto-csv').value;
-            const lineas = texto.split('\n').filter(linea => linea.trim() !== '');
-            const caracteresTotales = texto.length;
-            
-            const contador = document.getElementById('contador-lineas');
-            contador.textContent = `📊 ${lineas.length} líneas detectadas - ${caracteresTotales} caracteres`;
-        }
+    const texto = document.getElementById('texto-csv').value;
+    const lineas = texto.split('\n').filter(linea => linea.trim() !== '');
+    
+    const contador = document.getElementById('contador-lineas');
+    
+    // Mostrar solo el número de líneas
+    if (lineas.length > 0) {
+        contador.textContent = lineas.length;
+    } else {
+        contador.textContent = '';
+    }
+}
 
         function normalizarSaltos(texto) {
             return texto
