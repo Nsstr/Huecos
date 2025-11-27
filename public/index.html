@@ -29,7 +29,19 @@
         const db = getFirestore(app);
         
         // Make Firebase available globally
-        window.firebase = { db, collection, addDoc, getDocs, query, where, doc, setDoc, getDoc };
+        window.firebase = { 
+            db, 
+            collection, 
+            addDoc, 
+            getDocs, 
+            query, 
+            where, 
+            doc, 
+            setDoc, 
+            getDoc 
+        };
+        
+        console.log('🔥 Firebase SDK cargado correctamente');
     </script>
 
     <style>
@@ -474,12 +486,15 @@
         let fechaActual = obtenerFechaActual();
         let firebaseReady = false;
 
-        // FUNCIONES FIREBASE
+        // FUNCIONES FIREBASE - CORREGIDAS
         async function inicializarFirebase() {
             try {
                 const statusEl = document.getElementById('firebase-status');
                 statusEl.style.display = 'block';
                 statusEl.innerHTML = '<span class="loading"></span> Conectando con Firebase...';
+                
+                // Esperar a que Firebase esté disponible
+                await esperarFirebase();
                 
                 // Verificar que Firebase esté disponible
                 if (!window.firebase || !window.firebase.db) {
@@ -487,8 +502,8 @@
                 }
                 
                 // Hacer una consulta simple para verificar la conexión
-                const testQuery = query(collection(window.firebase.db, "test"));
-                await getDocs(testQuery);
+                const testQuery = window.firebase.query(window.firebase.collection(window.firebase.db, "test"));
+                await window.firebase.getDocs(testQuery);
                 
                 firebaseReady = true;
                 statusEl.className = 'firebase-status firebase-connected';
@@ -509,6 +524,27 @@
                 firebaseReady = false;
                 return false;
             }
+        }
+
+        // Función para esperar a que Firebase esté disponible
+        function esperarFirebase() {
+            return new Promise((resolve, reject) => {
+                let intentos = 0;
+                const maxIntentos = 50; // 5 segundos máximo
+                
+                const checkFirebase = () => {
+                    intentos++;
+                    if (window.firebase && window.firebase.db) {
+                        resolve();
+                    } else if (intentos >= maxIntentos) {
+                        reject(new Error('Timeout: Firebase no se cargó en 5 segundos'));
+                    } else {
+                        setTimeout(checkFirebase, 100);
+                    }
+                };
+                
+                checkFirebase();
+            });
         }
 
         async function guardarEnFirebase(datosProcesados) {
