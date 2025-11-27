@@ -494,6 +494,8 @@
         let datosCargados = {};
         let fechaActual = obtenerFechaActual();
         let firebaseReady = false;
+        // NUEVA VARIABLE: Control de guardado en segundo plano
+let guardadoFirebaseEnProgreso = false;
 
         // FUNCIONES FIREBASE - CORREGIDAS
         async function inicializarFirebase() {
@@ -588,76 +590,94 @@
             });
         }
 
-        async function guardarEnFirebase(datosProcesados) {
-            if (!firebaseReady) {
-                console.log('⚠️ Firebase no disponible, guardando localmente');
-                return false;
-            }
+       // FUNCIÓN MEJORADA: Guardar en Firebase en segundo plano (no bloqueante)
+async function guardarEnFirebaseEnSegundoPlano(datosProcesados) {
+    if (!firebaseReady) {
+        console.log('⚠️ Firebase no disponible, solo guardando localmente');
+        return false;
+    }
 
-            try {
-                console.log('💾 Guardando en Firebase...');
-                const { db, collection, addDoc, setDoc, doc } = window.firebase;
-                
-                const fecha = datosProcesados.fecha;
-                const productos = datosProcesados.productosConInfo || [];
-                
-                if (productos.length === 0) {
-                    console.log('⚠️ No hay productos para guardar');
-                    return false;
-                }
+    // Marcar que el guardado está en progreso
+    guardadoFirebaseEnProgreso = true;
+    
+    // Mostrar indicador de guardado en segundo plano
+    mostrarEstado("⏳ Guardando en la nube (segundo plano)...", "processing");
+    
+    try {
+        console.log('💾 Iniciando guardado en segundo plano en Firebase...');
+        const { db, collection, addDoc, setDoc, doc } = window.firebase;
+        
+        const fecha = datosProcesados.fecha;
+        const productos = datosProcesados.productosConInfo || [];
+        
+        if (productos.length === 0) {
+            console.log('⚠️ No hay productos para guardar');
+            guardadoFirebaseEnProgreso = false;
+            return false;
+        }
 
-                // Crear documento principal para la fecha
-                const fechaDocRef = doc(db, "huecos_gondola", fecha);
-                await setDoc(fechaDocRef, {
-                    fecha: fecha,
-                    totalItems: datosProcesados.totalItems,
-                    lineasProcesadas: datosProcesados.lineasProcesadas,
-                    lineasTotales: datosProcesados.lineasTotales,
-                    departamentos: datosProcesados.departamentos,
-                    productosSinDepartamento: datosProcesados.productosSinDepartamento,
+        // Crear documento principal para la fecha
+        const fechaDocRef = doc(db, "huecos_gondola", fecha);
+        await setDoc(fechaDocRef, {
+            fecha: fecha,
+            totalItems: datosProcesados.totalItems,
+            lineasProcesadas: datosProcesados.lineasProcesadas,
+            lineasTotales: datosProcesados.lineasTotales,
+            departamentos: datosProcesados.departamentos,
+            productosSinDepartamento: datosProcesados.productosSinDepartamento,
+            timestamp: new Date().toISOString()
+        });
+
+        // Guardar productos en subcolección
+        const productosCollectionRef = collection(fechaDocRef, "productos");
+        
+        // Guardar productos en lotes más pequeños para mayor estabilidad
+        const batchSize = 50;
+        let productosGuardados = 0;
+        
+        for (let i = 0; i < productos.length; i += batchSize) {
+            const batch = productos.slice(i, i + batchSize);
+            
+            // Guardar uno por uno para mejor manejo de errores
+            for (const producto of batch) {
+                await addDoc(productosCollectionRef, {
+                    sku: producto.sku || '',
+                    descripcion: producto.descripcion || '',
+                    deptId: producto.deptId || '',
+                    pasillo: producto.pasillo || '',
+                    stock: producto.stock || 0,
+                    upc: producto.upc || '',
                     timestamp: new Date().toISOString()
                 });
-
-                // Guardar productos en subcolección
-                const productosCollectionRef = collection(fechaDocRef, "productos");
-                
-                // Guardar productos en lotes más pequeños para mayor estabilidad
-                const batchSize = 50;
-                for (let i = 0; i < productos.length; i += batchSize) {
-                    const batch = productos.slice(i, i + batchSize);
-                    
-                    // Guardar uno por uno para mejor manejo de errores
-                    for (const producto of batch) {
-                        await addDoc(productosCollectionRef, {
-                            sku: producto.sku || '',
-                            descripcion: producto.descripcion || '',
-                            deptId: producto.deptId || '',
-                            pasillo: producto.pasillo || '',
-                            stock: producto.stock || 0,
-                            upc: producto.upc || '',
-                            timestamp: new Date().toISOString()
-                        });
-                    }
-                    
-                    console.log(`✅ Lote ${Math.floor(i/batchSize) + 1} guardado: ${batch.length} productos`);
-                }
-
-                console.log(`✅ Datos guardados en Firebase: ${productos.length} productos`);
-                mostrarEstado(`✅ Datos guardados en Firebase: ${productos.length} productos`, "success");
-                return true;
-                
-            } catch (error) {
-                console.error('❌ Error guardando en Firebase:', error);
-                
-                if (error.code === 'permission-denied') {
-                    mostrarEstado('❌ Error de permisos: Configura las reglas de Firestore', "error");
-                } else {
-                    mostrarEstado(`❌ Error guardando en Firebase: ${error.message}`, "error");
-                }
-                
-                return false;
+                productosGuardados++;
+            }
+            
+            console.log(`✅ Lote ${Math.floor(i/batchSize) + 1} guardado: ${batch.length} productos`);
+            
+            // Actualizar estado periódicamente
+            if (productosGuardados % 200 === 0) {
+                mostrarEstado(`⏳ Guardando en la nube... (${productosGuardados}/${productos.length})`, "processing");
             }
         }
+
+        console.log(`✅ Datos guardados en Firebase: ${productos.length} productos`);
+        mostrarEstado(`✅ Datos guardados en la nube: ${productos.length} productos`, "success");
+        guardadoFirebaseEnProgreso = false;
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Error guardando en Firebase:', error);
+        guardadoFirebaseEnProgreso = false;
+        
+        if (error.code === 'permission-denied') {
+            mostrarEstado('❌ Error de permisos al guardar en la nube', "error");
+        } else {
+            mostrarEstado(`❌ Error guardando en la nube: ${error.message}`, "error");
+        }
+        
+        return false;
+    }
+}
 
         async function cargarDesdeFirebase(fecha) {
             if (!firebaseReady) {
@@ -928,33 +948,53 @@
                 };
 
                 // NUEVO: Guardar en Firebase
-                const guardadoEnFirebase = await guardarEnFirebase(datosCargados[fecha]);
+                // NUEVO: Guardar en Firebase EN SEGUNDO PLANO (no bloqueante)
+let guardadoEnFirebase = false;
+if (firebaseReady) {
+    // Iniciar guardado en segundo plano sin await
+    guardarEnFirebaseEnSegundoPlano(datosCargados[fecha])
+        .then(resultado => {
+            guardadoEnFirebase = resultado;
+            console.log('✅ Guardado en segundo plano completado');
+        })
+        .catch(error => {
+            console.error('❌ Error en guardado segundo plano:', error);
+        });
+} else {
+    console.log('⚠️ Firebase no disponible, solo guardando localmente');
+}
 
                 // ACTUALIZAR FECHA DEL REPORTE AUTOMÁTICAMENTE
                 actualizarFechaReporte();
 
                 let mensajeExito = `✅ ${lineasProcesadas} productos procesados - ${totalItems} items en ${Object.keys(departamentos).length} departamentos`;
-                if (productosSinDepartamento.length > 0) {
-                    mensajeExito += ` (${productosSinDepartamento.length} productos sin departamento)`;
-                }
-                if (guardadoEnFirebase) {
-                    mensajeExito += ` - 🔥 Datos guardados en Firebase`;
-                } else {
-                    mensajeExito += ` - 💾 Datos guardados localmente`;
-                }
+if (productosSinDepartamento.length > 0) {
+    mensajeExito += ` (${productosSinDepartamento.length} productos sin departamento)`;
+}
+
+if (firebaseReady) {
+    mensajeExito += ` - 🔄 Guardando en la nube (segundo plano)`;
+} else {
+    mensajeExito += ` - 💾 Datos guardados localmente`;
+}
 
                 mostrarEstado(mensajeExito, "success");
 
                 document.getElementById('auto-navigate').style.display = 'block';
-                
-                setTimeout(() => {
-                    mostrarSeccion('resumen');
-                    document.getElementById('fecha-resumen').value = fecha;
-                    mostrarResumenDesdeDatosCargados();
-                }, 3000);
+
+// Navegación INMEDIATA (no esperar 3 segundos)
+setTimeout(() => {
+    mostrarSeccion('resumen');
+    document.getElementById('fecha-resumen').value = fecha;
+    mostrarResumenDesdeDatosCargados();
+}, 500); // Reducido a 0.5 segundos para mayor velocidad
 
                 document.getElementById('texto-csv').value = '';
                 actualizarContadorLineas();
+                // Configurar sistemas de prevención
+configurarPrevencionCierre();
+configurarPrevencionNavegacion();
+console.log('🛡️ Sistema de prevención de cierre configurado');
 
             } catch (error) {
                 console.error('❌ Error procesando datos:', error);
@@ -1586,6 +1626,44 @@ ${lineasSinDepto.join('\n')}</pre>
             actualizarContadorLineas();
             console.log('✅ Aplicación inicializada correctamente');
         }
+
+        // SISTEMA DE PREVENCIÓN DE CIERRE MIENTRAS GUARDA FIREBASE
+function configurarPrevencionCierre() {
+    window.addEventListener('beforeunload', function (e) {
+        if (guardadoFirebaseEnProgreso) {
+            // Mostrar advertencia personalizada
+            const mensaje = '⚠️ Los datos aún se están guardando en la nube. Si sales ahora, no estarán disponibles para consultas futuras. ¿Seguro que quieres salir?';
+            
+            // Para navegadores modernos
+            e.preventDefault();
+            e.returnValue = mensaje;
+            
+            // Para navegadores más antiguos
+            return mensaje;
+        }
+    });
+}
+
+// También prevenir navegación interna
+function configurarPrevencionNavegacion() {
+    // Interceptar clics en enlaces de navegación
+    document.addEventListener('click', function(e) {
+        if (guardadoFirebaseEnProgreso) {
+            const target = e.target;
+            
+            // Verificar si es un enlace de navegación interna
+            if (target.tagName === 'A' && target.getAttribute('href') && 
+                !target.getAttribute('href').startsWith('http') &&
+                !target.getAttribute('href').startsWith('#')) {
+                
+                if (!confirm('⚠️ Los datos aún se están guardando en la nube. Si navegas ahora, no estarán disponibles para consultas futuras. ¿Seguro que quieres continuar?')) {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+        }
+    });
+}
     </script>
 </body>
 </html>
