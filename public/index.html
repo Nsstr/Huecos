@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Huecos en Góndola</title>
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <style>
         :root {
             --primary-color: #2c3e50;
@@ -57,6 +57,7 @@
             display: flex;
             justify-content: center;
             gap: 15px;
+            flex-wrap: wrap;
         }
         
         .nav-btn {
@@ -322,6 +323,7 @@
                 <button id="btn-cargar" class="nav-btn active">Cargar Datos</button>
                 <button id="btn-resumen" class="nav-btn">Ver Resumen</button>
                 <button id="btn-reporte" class="nav-btn">Generar Reporte</button>
+                <button id="btn-historico" class="nav-btn">Cargar Histórico</button>
             </nav>
         </header>
 
@@ -358,6 +360,7 @@
                     <label for="fecha-resumen">Fecha:</label>
                     <input type="date" id="fecha-resumen">
                     <button id="btn-actualizar-resumen">Actualizar</button>
+                    <button id="btn-cargar-desde-sheets">Cargar desde Google Sheets</button>
                 </div>
                 <div id="resumen-contenido" class="resumen-container">
                     <!-- Aquí se cargará el resumen dinámicamente -->
@@ -385,10 +388,24 @@
                 </div>
                 <div id="resultado-reporte"></div>
             </section>
+
+            <!-- Nueva Sección: Cargar Histórico -->
+            <section id="seccion-historico" class="seccion-oculta">
+                <h2>Cargar Datos Históricos</h2>
+                <div class="form-group">
+                    <label for="fecha-historico">Seleccionar Fecha:</label>
+                    <input type="date" id="fecha-historico">
+                </div>
+                <button id="btn-cargar-historico">Cargar desde Google Sheets</button>
+                <div id="estado-historico" style="margin-top: 20px;"></div>
+            </section>
         </main>
     </div>
 
     <script>
+        // CONFIGURACIÓN GOOGLE SHEETS
+        const GOOGLE_SHEETS_API = 'https://script.google.com/macros/s/AKfycbz1PGNGyFIjpIJ4yP0059SC-Y6Lu5kuaKbpyQaaA2UvKjP0BLS9dzOMkcpojIV9VEz2/exec';
+
         // Mapeo de códigos de departamento a nombres
         const MAPA_DEPARTAMENTOS = {
             "1": "Galletitas y Golosinas",
@@ -467,6 +484,116 @@
 
         let fechaActual = obtenerFechaActual();
 
+        // NUEVAS FUNCIONES GOOGLE SHEETS
+        async function guardarEnGoogleSheets(datosProcesados) {
+            try {
+                console.log('💾 Guardando en Google Sheets...');
+                
+                const productos = datosProcesados.productosConInfo || [];
+                const fecha = datosProcesados.fecha;
+                
+                if (productos.length === 0) {
+                    console.log('⚠️ No hay productos para guardar');
+                    return false;
+                }
+
+                const response = await fetch(GOOGLE_SHEETS_API, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'guardar',
+                        fecha: fecha,
+                        productos: productos
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    console.log(`✅ Datos guardados en Sheets: ${result.registros} productos`);
+                    return true;
+                } else {
+                    console.error('❌ Error guardando en Sheets:', result.error);
+                    return false;
+                }
+                
+            } catch (error) {
+                console.error('❌ Error guardando en Google Sheets:', error);
+                return false;
+            }
+        }
+
+        async function cargarDesdeGoogleSheets(fecha) {
+            try {
+                console.log(`📥 Cargando datos históricos para: ${fecha}`);
+                
+                const response = await fetch(GOOGLE_SHEETS_API, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'cargar',
+                        fecha: fecha
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success && result.productos.length > 0) {
+                    console.log(`✅ Datos cargados desde Sheets: ${result.productos.length} productos`);
+                    
+                    // Reconstruir la estructura de datosCargados
+                    const productosConInfo = result.productos.map(producto => ({
+                        sku: producto.sku,
+                        descripcion: producto.descripcion,
+                        deptId: producto.deptId,
+                        pasillo: producto.pasillo,
+                        stock: producto.stock,
+                        upc: producto.upc
+                    }));
+
+                    // Reconstruir departamentos para el resumen
+                    const departamentos = {};
+                    let totalItems = 0;
+
+                    productosConInfo.forEach(producto => {
+                        const codigoDepto = producto.deptId;
+                        const nombreDepto = obtenerNombreDepartamento(codigoDepto);
+                        
+                        if (!departamentos[codigoDepto]) {
+                            departamentos[codigoDepto] = {
+                                nombre: nombreDepto,
+                                cantidad: 0
+                            };
+                        }
+                        
+                        departamentos[codigoDepto].cantidad += 1;
+                        totalItems += 1;
+                    });
+
+                    return {
+                        fecha: fecha,
+                        productosConInfo: productosConInfo,
+                        departamentos: departamentos,
+                        totalItems: totalItems,
+                        lineasProcesadas: productosConInfo.length,
+                        lineasTotales: productosConInfo.length,
+                        productosSinDepartamento: [],
+                        timestamp: result.productos[0]?.timestamp || new Date().toISOString()
+                    };
+                }
+                
+                return null;
+                
+            } catch (error) {
+                console.error('❌ Error cargando desde Google Sheets:', error);
+                return null;
+            }
+        }
+
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🔄 DOM cargado, iniciando aplicación...');
@@ -479,10 +606,11 @@
             // Cargar tabla de referencia primero
             await cargarTablaReferencia();
             
-            // Configurar fecha - USANDO LA FUNCIÓN CORREGIDA
+            // Configurar fecha
             document.getElementById('fecha').value = fechaActual;
             document.getElementById('fecha-resumen').value = fechaActual;
-            document.getElementById('fecha-reporte').value = fechaActual; // NUEVO: Misma fecha para reporte
+            document.getElementById('fecha-reporte').value = fechaActual;
+            document.getElementById('fecha-historico').value = fechaActual;
             
             // Configurar navegación
             document.getElementById('btn-cargar').addEventListener('click', () => mostrarSeccion('cargar'));
@@ -494,13 +622,17 @@
             document.getElementById('btn-reporte').addEventListener('click', () => {
                 mostrarSeccion('reporte');
                 actualizarSelectorPasillos();
-                actualizarFechaReporte(); // NUEVO: Actualizar fecha al mostrar sección
+                actualizarFechaReporte();
+            });
+            document.getElementById('btn-historico').addEventListener('click', () => {
+                mostrarSeccion('historico');
             });
             
             // Configurar eventos
             document.getElementById('btn-cargar-datos').addEventListener('click', procesarDatosCSV);
             document.getElementById('btn-actualizar-resumen').addEventListener('click', mostrarResumenDesdeDatosCargados);
-            document.getElementById('btn-actualizar-reporte').addEventListener('click', actualizarFechaReporte); // NUEVO: Botón actualizar
+            document.getElementById('btn-cargar-desde-sheets').addEventListener('click', cargarYMostrarDesdeSheets);
+            document.getElementById('btn-actualizar-reporte').addEventListener('click', actualizarFechaReporte);
             document.getElementById('texto-csv').addEventListener('input', actualizarContadorLineas);
             document.getElementById('link-ver-resumen').addEventListener('click', function(e) {
                 e.preventDefault();
@@ -508,6 +640,7 @@
                 mostrarResumenDesdeDatosCargados();
             });
             document.getElementById('btn-generar-pdf').addEventListener('click', generarReportePDF);
+            document.getElementById('btn-cargar-historico').addEventListener('click', cargarHistoricoDesdeSheets);
 
             // Inicializar contador
             actualizarContadorLineas();
@@ -515,55 +648,57 @@
             console.log('✅ Aplicación inicializada correctamente');
         }
 
-        // NUEVA FUNCIÓN: Actualizar selector de pasillos
-        function actualizarSelectorPasillos() {
-            const selector = document.getElementById('pasillo-reporte');
-            selector.innerHTML = '<option value="">Todos los pasillos</option>';
+        // NUEVA FUNCIÓN: Cargar y mostrar datos desde Sheets
+        async function cargarYMostrarDesdeSheets() {
+            const fechaResumen = document.getElementById('fecha-resumen').value;
             
-            const pasillosUnicos = new Set();
-            
-            // Recorrer todos los datos cargados para encontrar pasillos únicos
-            Object.values(datosCargados).forEach(datos => {
-                if (datos.productosConInfo) {
-                    datos.productosConInfo.forEach(producto => {
-                        if (producto.pasillo) {
-                            pasillosUnicos.add(producto.pasillo);
-                        }
-                    });
-                }
-            });
-            
-            // Ordenar y agregar pasillos al selector
-            Array.from(pasillosUnicos).sort().forEach(pasillo => {
-                const option = document.createElement('option');
-                option.value = pasillo;
-                option.textContent = pasillo;
-                selector.appendChild(option);
-            });
-        }
+            if (!fechaResumen) {
+                mostrarEstado("❌ Selecciona una fecha", "error");
+                return;
+            }
 
-        // NUEVA FUNCIÓN: Actualizar el selector del resumen con la última fecha cargada
-        function actualizarSelectorResumen() {
-            const fechasCargadas = Object.keys(datosCargados);
-            if (fechasCargadas.length > 0) {
-                // Ordenar fechas de más reciente a más antigua
-                fechasCargadas.sort().reverse();
-                const ultimaFecha = fechasCargadas[0];
-                document.getElementById('fecha-resumen').value = ultimaFecha;
+            mostrarEstado("⏳ Cargando datos desde Google Sheets...", "processing");
+
+            const datos = await cargarDesdeGoogleSheets(fechaResumen);
+            
+            if (datos) {
+                // Guardar en datos locales
+                datosCargados[fechaResumen] = datos;
+                mostrarResumenDepartamentos(datos);
+                mostrarEstado("✅ Datos cargados desde Google Sheets", "success");
+            } else {
+                mostrarEstado("❌ No hay datos en Google Sheets para esta fecha", "error");
             }
         }
 
-        // NUEVA FUNCIÓN: Actualizar fecha del reporte con la última fecha cargada
-        function actualizarFechaReporte() {
-            const fechasCargadas = Object.keys(datosCargados);
-            if (fechasCargadas.length > 0) {
-                // Ordenar fechas de más reciente a más antigua
-                fechasCargadas.sort().reverse();
-                const ultimaFecha = fechasCargadas[0];
-                document.getElementById('fecha-reporte').value = ultimaFecha;
-                console.log(`📅 Fecha de reporte actualizada a: ${ultimaFecha}`);
+        // NUEVA FUNCIÓN: Cargar histórico desde Sheets
+        async function cargarHistoricoDesdeSheets() {
+            const fecha = document.getElementById('fecha-historico').value;
+            
+            if (!fecha) {
+                document.getElementById('estado-historico').innerHTML = 
+                    '<div class="error">❌ Selecciona una fecha</div>';
+                return;
+            }
+
+            document.getElementById('estado-historico').innerHTML = 
+                '<div class="processing">⏳ Cargando datos desde Google Sheets...</div>';
+
+            const datos = await cargarDesdeGoogleSheets(fecha);
+            
+            if (datos) {
+                // Guardar en datos locales
+                datosCargados[fecha] = datos;
+                document.getElementById('estado-historico').innerHTML = 
+                    `<div class="success">
+                        ✅ Datos cargados: ${datos.totalItems} productos<br>
+                        <button onclick="mostrarSeccion('resumen'); document.getElementById('fecha-resumen').value='${fecha}'; mostrarResumenDesdeDatosCargados();" style="margin-top: 10px;">
+                            Ver Resumen
+                        </button>
+                    </div>`;
             } else {
-                console.log('ℹ️ No hay fechas cargadas para actualizar el reporte');
+                document.getElementById('estado-historico').innerHTML = 
+                    '<div class="error">❌ No hay datos en Google Sheets para esta fecha</div>';
             }
         }
 
@@ -786,18 +921,22 @@
                     timestamp: new Date().toISOString()
                 };
 
+                // NUEVO: Guardar también en Google Sheets
+                const guardadoEnSheets = await guardarEnGoogleSheets(datosCargados[fecha]);
+                
+                if (guardadoEnSheets) {
+                    console.log('✅ Datos guardados en Google Sheets exitosamente');
+                }
+
                 // ACTUALIZAR FECHA DEL REPORTE AUTOMÁTICAMENTE
                 actualizarFechaReporte();
-
-                // Verificación final de stocks
-                console.log('🔍 VERIFICACIÓN FINAL DE STOCKS:');
-                productosConInfo.slice(0, 5).forEach((producto, index) => {
-                    console.log(`   ${index + 1}. SKU: ${producto.sku} | Stock: ${producto.stock}`);
-                });
 
                 let mensajeExito = `✅ ${lineasProcesadas} productos procesados - ${totalItems} items en ${Object.keys(departamentos).length} departamentos`;
                 if (productosSinDepartamento.length > 0) {
                     mensajeExito += ` (${productosSinDepartamento.length} productos sin departamento)`;
+                }
+                if (guardadoEnSheets) {
+                    mensajeExito += ` - 💾 Guardado en Google Sheets`;
                 }
 
                 mostrarEstado(mensajeExito, "success");
@@ -821,7 +960,8 @@
             }
         }
 
-        function mostrarResumenDesdeDatosCargados() {
+        // MODIFICADA: Función mostrarResumenDesdeDatosCargados - Ahora intenta cargar desde Sheets si no hay datos locales
+        async function mostrarResumenDesdeDatosCargados() {
             const fechaResumen = document.getElementById('fecha-resumen').value;
             
             if (!fechaResumen) {
@@ -829,17 +969,26 @@
                 return;
             }
 
-            const datosFecha = datosCargados[fechaResumen];
+            let datosFecha = datosCargados[fechaResumen];
             
+            // NUEVO: Si no hay datos locales, intentar cargar desde Google Sheets
             if (!datosFecha) {
-                mostrarResumenVacio(fechaResumen);
-                mostrarEstado("ℹ️ No hay datos cargados para esta fecha", "processing");
-                return;
+                mostrarEstado("⏳ Cargando datos desde Google Sheets...", "processing");
+                datosFecha = await cargarDesdeGoogleSheets(fechaResumen);
+                
+                if (datosFecha) {
+                    // Guardar en datos locales para uso futuro
+                    datosCargados[fechaResumen] = datosFecha;
+                    mostrarEstado("✅ Datos cargados desde Google Sheets", "success");
+                } else {
+                    mostrarResumenVacio(fechaResumen);
+                    mostrarEstado("ℹ️ No hay datos cargados para esta fecha", "processing");
+                    return;
+                }
             }
 
             console.log('📊 Mostrando resumen para:', fechaResumen);
             mostrarResumenDepartamentos(datosFecha);
-            mostrarEstado("✅ Mostrando datos cargados", "success");
         }
 
         // FUNCIÓN CORREGIDA: Mostrar resumen con la fecha del selector
@@ -877,7 +1026,7 @@
             });
 
             let productosSinDeptoHTML = '';
-            if (datos.productosSinDepartamento.length > 0) {
+            if (datos.productosSinDepartamento && datos.productosSinDepartamento.length > 0) {
                 // Obtener todas las líneas del CSV original que pegó el usuario
                 const lineasCSV = datos.csv.split('\n');
                 
@@ -938,7 +1087,7 @@ ${lineasSinDepto.join('\n')}</pre>
                 
                 <div class="resumen-total">
                     <strong>Total general:</strong> ${datos.totalItems} items en ${deptosOrdenados.length} departamentos
-                    ${datos.productosSinDepartamento.length > 0 ? ` + ${datos.productosSinDepartamento.length} productos sin departamento` : ''}
+                    ${datos.productosSinDepartamento && datos.productosSinDepartamento.length > 0 ? ` + ${datos.productosSinDepartamento.length} productos sin departamento` : ''}
                 </div>
 
                 <table class="resumen-table">
@@ -993,297 +1142,349 @@ ${lineasSinDepto.join('\n')}</pre>
             }
         }
 
-      // FUNCIÓN CORREGIDA: Generar Reporte PDF - COLUMNA CÓDIGO BARRAS MÁS ANCHA
-async function generarReportePDF() {
-    const fechaReporteInput = document.getElementById('fecha-reporte').value;
-    
-    if (!fechaReporteInput) {
-        mostrarEstado("❌ Selecciona una fecha para el reporte", "error");
-        return;
-    }
-
-    // Convertir fecha de YYYY-MM-DD a DD-MM-YYYY para el PDF
-    const fechaReportePDF = formatoFechaDDMMYYYY(fechaReporteInput);
-
-    // Buscar datos para la fecha del reporte
-    const datosFecha = datosCargados[fechaReporteInput];
-    
-    if (!datosFecha || !datosFecha.productosConInfo) {
-        mostrarEstado("❌ No hay datos cargados para esta fecha", "error");
-        return;
-    }
-
-    try {
-        const progreso = document.getElementById('progreso-reporte');
-        const resultado = document.getElementById('resultado-reporte');
-        progreso.style.display = 'block';
-        resultado.innerHTML = '';
-        progreso.innerHTML = '<p>🔄 Generando reporte PDF con códigos de barras optimizados...</p>';
-
-        // Filtrar productos por pasillo si se especificó
-        let productosFiltrados = datosFecha.productosConInfo;
-        const pasilloFiltro = document.getElementById('pasillo-reporte').value;
-        if (pasilloFiltro) {
-            productosFiltrados = productosFiltrados.filter(p => p.pasillo === pasilloFiltro);
+        // NUEVA FUNCIÓN: Actualizar selector de pasillos
+        function actualizarSelectorPasillos() {
+            const selector = document.getElementById('pasillo-reporte');
+            selector.innerHTML = '<option value="">Todos los pasillos</option>';
+            
+            const pasillosUnicos = new Set();
+            
+            // Recorrer todos los datos cargados para encontrar pasillos únicos
+            Object.values(datosCargados).forEach(datos => {
+                if (datos.productosConInfo) {
+                    datos.productosConInfo.forEach(producto => {
+                        if (producto.pasillo) {
+                            pasillosUnicos.add(producto.pasillo);
+                        }
+                    });
+                }
+            });
+            
+            // Ordenar y agregar pasillos al selector
+            Array.from(pasillosUnicos).sort().forEach(pasillo => {
+                const option = document.createElement('option');
+                option.value = pasillo;
+                option.textContent = pasillo;
+                selector.appendChild(option);
+            });
         }
 
-        console.log('📊 Productos para PDF:', productosFiltrados.length);
-        
-        // Agrupar productos por pasillo
-        const productosPorPasillo = {};
-        productosFiltrados.forEach(producto => {
-            const pasillo = producto.pasillo || 'SIN PASILLO';
-            if (!productosPorPasillo[pasillo]) {
-                productosPorPasillo[pasillo] = [];
+        // NUEVA FUNCIÓN: Actualizar el selector del resumen con la última fecha cargada
+        function actualizarSelectorResumen() {
+            const fechasCargadas = Object.keys(datosCargados);
+            if (fechasCargadas.length > 0) {
+                // Ordenar fechas de más reciente a más antigua
+                fechasCargadas.sort().reverse();
+                const ultimaFecha = fechasCargadas[0];
+                document.getElementById('fecha-resumen').value = ultimaFecha;
             }
-            productosPorPasillo[pasillo].push(producto);
-        });
+        }
 
-        // Crear PDF en orientación VERTICAL
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
+        // NUEVA FUNCIÓN: Actualizar fecha del reporte con la última fecha cargada
+        function actualizarFechaReporte() {
+            const fechasCargadas = Object.keys(datosCargados);
+            if (fechasCargadas.length > 0) {
+                // Ordenar fechas de más reciente a más antigua
+                fechasCargadas.sort().reverse();
+                const ultimaFecha = fechasCargadas[0];
+                document.getElementById('fecha-reporte').value = ultimaFecha;
+                console.log(`📅 Fecha de reporte actualizada a: ${ultimaFecha}`);
+            } else {
+                console.log('ℹ️ No hay fechas cargadas para actualizar el reporte');
+            }
+        }
 
-        // Configuración general
-        const marginLeft = 5;
-        const marginRight = 5;
-        const marginTop = 10;
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const usableWidth = pageWidth - marginLeft - marginRight;
-
-        // Para cada pasillo
-        Object.keys(productosPorPasillo).sort().forEach((pasillo, index) => {
-            // Salto de página si no es el primer pasillo
-            if (index > 0) {
-                doc.addPage();
+        // FUNCIÓN CORREGIDA: Generar Reporte PDF - COLUMNA CÓDIGO BARRAS MÁS ANCHA
+        async function generarReportePDF() {
+            const fechaReporteInput = document.getElementById('fecha-reporte').value;
+            
+            if (!fechaReporteInput) {
+                mostrarEstado("❌ Selecciona una fecha para el reporte", "error");
+                return;
             }
 
-            let currentY = marginTop;
+            // Convertir fecha de YYYY-MM-DD a DD-MM-YYYY para el PDF
+            const fechaReportePDF = formatoFechaDDMMYYYY(fechaReporteInput);
 
-            // Título principal COMPACTO
-            doc.setFontSize(10);
-            doc.setFont(undefined, 'bold');
-            doc.text(`Reporte de Huecos en Góndola del ${fechaReportePDF}`, marginLeft, currentY);
-            currentY += 5;
+            // Buscar datos para la fecha del reporte
+            const datosFecha = datosCargados[fechaReporteInput];
+            
+            if (!datosFecha || !datosFecha.productosConInfo) {
+                mostrarEstado("❌ No hay datos cargados para esta fecha", "error");
+                return;
+            }
 
-            // Título del pasillo COMPACTO
-            doc.setFontSize(9);
-            doc.setFont(undefined, 'bold');
-            doc.text(`Pasillo: ${pasillo}`, marginLeft, currentY);
-            currentY += 4;
+            try {
+                const progreso = document.getElementById('progreso-reporte');
+                const resultado = document.getElementById('resultado-reporte');
+                progreso.style.display = 'block';
+                resultado.innerHTML = '';
+                progreso.innerHTML = '<p>🔄 Generando reporte PDF con códigos de barras optimizados...</p>';
 
-            // Preparar datos para la tabla
-            const tableData = productosPorPasillo[pasillo].map(producto => {
-                const stockStr = producto.stock !== undefined && producto.stock !== null 
-                    ? producto.stock.toString() 
-                    : '0';
+                // Filtrar productos por pasillo si se especificó
+                let productosFiltrados = datosFecha.productosConInfo;
+                const pasilloFiltro = document.getElementById('pasillo-reporte').value;
+                if (pasilloFiltro) {
+                    productosFiltrados = productosFiltrados.filter(p => p.pasillo === pasilloFiltro);
+                }
+
+                console.log('📊 Productos para PDF:', productosFiltrados.length);
                 
-                return [
-                    producto.deptId || '',
-                    '', // Ajust. vacío
-                    producto.sku,
-                    producto.descripcion || '',
-                    stockStr,
-                    producto.upc || '',
-                    '' // Columna para códigos de barras
-                ];
-            });
-
-            // CALCULAR ANCHOS OPTIMIZADOS - COLUMNA CÓDIGO BARRAS MÁS ANCHA
-            const totalUsableWidth = usableWidth - 2;
-            const columnWidths = {
-                0: 8,  // depto
-                1: 8,   // Aj.
-                2: 18,  // sku (ligeramente reducido)
-                3: 15,  // detalle (reducida para dar más espacio al código)
-                4: 10,  // disp (ligeramente reducido)
-                5: 22,  // Código (ligeramente reducido)
-                6: 90   // Cód Barras - SIGNIFICATIVAMENTE AUMENTADO
-            };
-
-            // Ajustar dinámicamente el ancho de "detalle" con lo que sobra
-            const totalDefinedWidth = Object.values(columnWidths).reduce((a, b) => a + b, 0);
-            const extraWidth = totalUsableWidth - totalDefinedWidth;
-            if (extraWidth > 0) {
-                columnWidths[3] += extraWidth;
-            }
-
-            console.log('📏 Distribución de anchos:', columnWidths);
-            console.log('📐 Ancho total definido:', totalDefinedWidth);
-            console.log('📐 Espacio extra para detalle:', extraWidth);
-
-            // Generar tabla con COLUMNA CÓDIGO BARRAS MÁS ANCHA
-            doc.autoTable({
-    startY: currentY,
-    head: [['depto', 'Aj.', 'sku', 'detalle', 'disp', 'Código', 'Cód Barras']],
-    body: tableData,
-    margin: { 
-        left: marginLeft, 
-        right: marginRight,
-        top: currentY
-    },
-    styles: { 
-        fontSize: 7,
-        cellPadding: 1.5,
-        minCellHeight: 14,
-        cellWidth: 'wrap',
-        lineColor: [255, 255, 255],
-        lineWidth: 0.1,
-        valign: 'middle'
-    },
-    headStyles: { 
-        fillColor: [44, 62, 80],
-        textColor: 255,
-        fontStyle: 'bold',
-        fontSize: 7,
-        cellPadding: 1.5,
-        minCellHeight: 14
-    },
-                bodyStyles: {
-                    fontSize: 7,
-                    cellPadding: 1.5,
-                    minCellHeight: 14,
-                    valign: 'middle'
-                },
-                alternateRowStyles: { 
-                    fillColor: [250, 250, 250],
-                    minCellHeight: 14
-                },
-                tableWidth: 'auto',
-                columnStyles: columnWidths,
-                rowPageBreak: 'avoid',
-                didParseCell: function(data) {
-                    if (data.section === 'body') {
-                        data.cell.minCellHeight = 14;
+                // Agrupar productos por pasillo
+                const productosPorPasillo = {};
+                productosFiltrados.forEach(producto => {
+                    const pasillo = producto.pasillo || 'SIN PASILLO';
+                    if (!productosPorPasillo[pasillo]) {
+                        productosPorPasillo[pasillo] = [];
                     }
-                },
-               didDrawCell: function(data) {
-    // Solo procesar celdas del cuerpo en la columna de códigos de barras
-    if (data.section === 'body' && data.column.index === 6) {
-        const productoIndex = data.row.index;
-        const productosDelPasillo = productosPorPasillo[pasillo];
-        
-        if (!productosDelPasillo || productoIndex >= productosDelPasillo.length) {
-            return;
-        }
-        
-        const producto = productosDelPasillo[productoIndex];
-        
-        if (!producto) {
-            return;
-        }
+                    productosPorPasillo[pasillo].push(producto);
+                });
 
-        // Determinar código para código de barras
-        const codigoBarras = (producto.upc && producto.upc.trim() !== '') 
-            ? producto.upc 
-            : (producto.sku || '');
+                // Crear PDF en orientación VERTICAL
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
 
-        if (!codigoBarras || codigoBarras.length < 8) {
-            // Código muy corto para código de barras, mostrar texto
-            doc.setFontSize(5);
-            const textoMostrar = producto.sku || 'SIN CODIGO';
-            const textWidth = doc.getTextWidth(textoMostrar);
-            const textX = data.cell.x + (data.cell.width - textWidth) / 2;
-            doc.text(textoMostrar, textX, data.cell.y + 7);
-            return;
-        }
+                // Configuración general
+                const marginLeft = 5;
+                const marginRight = 5;
+                const marginTop = 10;
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const usableWidth = pageWidth - marginLeft - marginRight;
 
-        try {
-            // Crear elemento canvas con alta resolución
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            
-            // Configurar canvas con mayor resolución
-            canvas.width = 400;
-            canvas.height = 120;
-            
-            // Generar código de barras con parámetros óptimos
-            JsBarcode(canvas, codigoBarras, {
-                format: "EAN13",
-                width: 2.2,
-                height: 60,
-                displayValue: false,
-                fontSize: 0,
-                margin: 12,
-                background: "#ffffff",
-                lineColor: "#000000"
-            });
+                // Para cada pasillo
+                Object.keys(productosPorPasillo).sort().forEach((pasillo, index) => {
+                    // Salto de página si no es el primer pasillo
+                    if (index > 0) {
+                        doc.addPage();
+                    }
 
-            const barcodeDataURL = canvas.toDataURL('image/png', 1.0);
-            
-            // Calcular posición centrada en celda
-            const barcodeWidth = 32;
-            const barcodeHeight = 10;
-            const x = data.cell.x + (data.cell.width - barcodeWidth) / 2;
-            const y = data.cell.y + (data.cell.height - barcodeHeight) / 2;
-            
-            // Agregar código de barras
-            doc.addImage(barcodeDataURL, 'PNG', x, y, barcodeWidth, barcodeHeight);
-            
-            // DIBUJAR LÍNEAS BLANCAS - USANDO data.cell
-            doc.setDrawColor(255, 255, 255);
-            doc.setLineWidth(0.3);
-            
-            // Línea entre Código y Cód Barras
-            doc.line(
-                data.cell.x, 
-                data.cell.y, 
-                data.cell.x, 
-                data.cell.y + data.cell.height
-            );
-            
-            // Línea derecha de Cód Barras
-            doc.line(
-                data.cell.x + data.cell.width, 
-                data.cell.y, 
-                data.cell.x + data.cell.width, 
-                data.cell.y + data.cell.height
-            );
-            
-            console.log(`✅ Código de barras en celda de ${data.cell.width}mm`);
-            
-        } catch (error) {
-            console.error(`❌ Error generando código de barras para ${producto.sku}:`, error);
-            // Fallback: mostrar texto
-            if (data.cell) {
-                doc.setFontSize(5);
-                const textoMostrar = codigoBarras.length > 20 ? codigoBarras.substring(0, 20) + '...' : codigoBarras;
-                const textWidth = doc.getTextWidth(textoMostrar);
-                const textX = data.cell.x + (data.cell.width - textWidth) / 2;
-                doc.text(textoMostrar, textX, data.cell.y + 7);
+                    let currentY = marginTop;
+
+                    // Título principal COMPACTO
+                    doc.setFontSize(10);
+                    doc.setFont(undefined, 'bold');
+                    doc.text(`Reporte de Huecos en Góndola del ${fechaReportePDF}`, marginLeft, currentY);
+                    currentY += 5;
+
+                    // Título del pasillo COMPACTO
+                    doc.setFontSize(9);
+                    doc.setFont(undefined, 'bold');
+                    doc.text(`Pasillo: ${pasillo}`, marginLeft, currentY);
+                    currentY += 4;
+
+                    // Preparar datos para la tabla
+                    const tableData = productosPorPasillo[pasillo].map(producto => {
+                        const stockStr = producto.stock !== undefined && producto.stock !== null 
+                            ? producto.stock.toString() 
+                            : '0';
+                        
+                        return [
+                            producto.deptId || '',
+                            '', // Ajust. vacío
+                            producto.sku,
+                            producto.descripcion || '',
+                            stockStr,
+                            producto.upc || '',
+                            '' // Columna para códigos de barras
+                        ];
+                    });
+
+                    // CALCULAR ANCHOS OPTIMIZADOS - COLUMNA CÓDIGO BARRAS MÁS ANCHA
+                    const totalUsableWidth = usableWidth - 2;
+                    const columnWidths = {
+                        0: 8,  // depto
+                        1: 8,   // Aj.
+                        2: 18,  // sku (ligeramente reducido)
+                        3: 15,  // detalle (reducida para dar más espacio al código)
+                        4: 10,  // disp (ligeramente reducido)
+                        5: 22,  // Código (ligeramente reducido)
+                        6: 90   // Cód Barras - SIGNIFICATIVAMENTE AUMENTADO
+                    };
+
+                    // Ajustar dinámicamente el ancho de "detalle" con lo que sobra
+                    const totalDefinedWidth = Object.values(columnWidths).reduce((a, b) => a + b, 0);
+                    const extraWidth = totalUsableWidth - totalDefinedWidth;
+                    if (extraWidth > 0) {
+                        columnWidths[3] += extraWidth;
+                    }
+
+                    console.log('📏 Distribución de anchos:', columnWidths);
+                    console.log('📐 Ancho total definido:', totalDefinedWidth);
+                    console.log('📐 Espacio extra para detalle:', extraWidth);
+
+                    // Generar tabla con COLUMNA CÓDIGO BARRAS MÁS ANCHA
+                    doc.autoTable({
+                        startY: currentY,
+                        head: [['depto', 'Aj.', 'sku', 'detalle', 'disp', 'Código', 'Cód Barras']],
+                        body: tableData,
+                        margin: { 
+                            left: marginLeft, 
+                            right: marginRight,
+                            top: currentY
+                        },
+                        styles: { 
+                            fontSize: 7,
+                            cellPadding: 1.5,
+                            minCellHeight: 14,
+                            cellWidth: 'wrap',
+                            lineColor: [255, 255, 255],
+                            lineWidth: 0.1,
+                            valign: 'middle'
+                        },
+                        headStyles: { 
+                            fillColor: [44, 62, 80],
+                            textColor: 255,
+                            fontStyle: 'bold',
+                            fontSize: 7,
+                            cellPadding: 1.5,
+                            minCellHeight: 14
+                        },
+                        bodyStyles: {
+                            fontSize: 7,
+                            cellPadding: 1.5,
+                            minCellHeight: 14,
+                            valign: 'middle'
+                        },
+                        alternateRowStyles: { 
+                            fillColor: [250, 250, 250],
+                            minCellHeight: 14
+                        },
+                        tableWidth: 'auto',
+                        columnStyles: columnWidths,
+                        rowPageBreak: 'avoid',
+                        didParseCell: function(data) {
+                            if (data.section === 'body') {
+                                data.cell.minCellHeight = 14;
+                            }
+                        },
+                        didDrawCell: function(data) {
+                            // Solo procesar celdas del cuerpo en la columna de códigos de barras
+                            if (data.section === 'body' && data.column.index === 6) {
+                                const productoIndex = data.row.index;
+                                const productosDelPasillo = productosPorPasillo[pasillo];
+                                
+                                if (!productosDelPasillo || productoIndex >= productosDelPasillo.length) {
+                                    return;
+                                }
+                                
+                                const producto = productosDelPasillo[productoIndex];
+                                
+                                if (!producto) {
+                                    return;
+                                }
+
+                                // Determinar código para código de barras
+                                const codigoBarras = (producto.upc && producto.upc.trim() !== '') 
+                                    ? producto.upc 
+                                    : (producto.sku || '');
+
+                                if (!codigoBarras || codigoBarras.length < 8) {
+                                    // Código muy corto para código de barras, mostrar texto
+                                    doc.setFontSize(5);
+                                    const textoMostrar = producto.sku || 'SIN CODIGO';
+                                    const textWidth = doc.getTextWidth(textoMostrar);
+                                    const textX = data.cell.x + (data.cell.width - textWidth) / 2;
+                                    doc.text(textoMostrar, textX, data.cell.y + 7);
+                                    return;
+                                }
+
+                                try {
+                                    // Crear elemento canvas con alta resolución
+                                    const canvas = document.createElement('canvas');
+                                    const ctx = canvas.getContext('2d');
+                                    
+                                    // Configurar canvas con mayor resolución
+                                    canvas.width = 400;
+                                    canvas.height = 120;
+                                    
+                                    // Generar código de barras con parámetros óptimos
+                                    JsBarcode(canvas, codigoBarras, {
+                                        format: "EAN13",
+                                        width: 2.2,
+                                        height: 60,
+                                        displayValue: false,
+                                        fontSize: 0,
+                                        margin: 12,
+                                        background: "#ffffff",
+                                        lineColor: "#000000"
+                                    });
+
+                                    const barcodeDataURL = canvas.toDataURL('image/png', 1.0);
+                                    
+                                    // Calcular posición centrada en celda
+                                    const barcodeWidth = 32;
+                                    const barcodeHeight = 10;
+                                    const x = data.cell.x + (data.cell.width - barcodeWidth) / 2;
+                                    const y = data.cell.y + (data.cell.height - barcodeHeight) / 2;
+                                    
+                                    // Agregar código de barras
+                                    doc.addImage(barcodeDataURL, 'PNG', x, y, barcodeWidth, barcodeHeight);
+                                    
+                                    // DIBUJAR LÍNEAS BLANCAS - USANDO data.cell
+                                    doc.setDrawColor(255, 255, 255);
+                                    doc.setLineWidth(0.3);
+                                    
+                                    // Línea entre Código y Cód Barras
+                                    doc.line(
+                                        data.cell.x, 
+                                        data.cell.y, 
+                                        data.cell.x, 
+                                        data.cell.y + data.cell.height
+                                    );
+                                    
+                                    // Línea derecha de Cód Barras
+                                    doc.line(
+                                        data.cell.x + data.cell.width, 
+                                        data.cell.y, 
+                                        data.cell.x + data.cell.width, 
+                                        data.cell.y + data.cell.height
+                                    );
+                                    
+                                    console.log(`✅ Código de barras en celda de ${data.cell.width}mm`);
+                                    
+                                } catch (error) {
+                                    console.error(`❌ Error generando código de barras para ${producto.sku}:`, error);
+                                    // Fallback: mostrar texto
+                                    if (data.cell) {
+                                        doc.setFontSize(5);
+                                        const textoMostrar = codigoBarras.length > 20 ? codigoBarras.substring(0, 20) + '...' : codigoBarras;
+                                        const textWidth = doc.getTextWidth(textoMostrar);
+                                        const textX = data.cell.x + (data.cell.width - textWidth) / 2;
+                                        doc.text(textoMostrar, textX, data.cell.y + 7);
+                                    }
+                                }
+                            }
+                        },
+                        tableLineWidth: 0.1,
+                        tableLineColor: [255, 255, 255],
+                        margin: { top: currentY, bottom: 10 },
+                        pageBreak: 'auto'
+                    });
+
+                });
+
+                // Guardar PDF
+                const pdfBlob = doc.output('blob');
+                const pdfUrl = URL.createObjectURL(pdfBlob);
+                
+                // Mostrar resultado
+                progreso.style.display = 'none';
+                resultado.innerHTML = `
+                    <div class="success" style="margin-top: 20px;">
+                        <p>✅ Reporte generado correctamente!</p>
+                    </div>
+                `;
+
+                // Auto-abrir en nueva pestaña para imprimir
+                setTimeout(() => {
+                    window.open(pdfUrl, '_blank');
+                }, 1000);
+
+            } catch (error) {
+                console.error('❌ Error generando PDF:', error);
+                document.getElementById('progreso-reporte').innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
             }
         }
-    }
-},
-                tableLineWidth: 0.1,
-                tableLineColor: [255, 255, 255],
-                margin: { top: currentY, bottom: 10 },
-                pageBreak: 'auto'
-            });
-
-        });
-
-        // Guardar PDF
-        const pdfBlob = doc.output('blob');
-        const pdfUrl = URL.createObjectURL(pdfBlob);
-        
-        // Mostrar resultado
-        progreso.style.display = 'none';
-        resultado.innerHTML = `
-    <div class="success" style="margin-top: 20px;">
-        <p>✅ Reporte generado correctamente!</p>
-    </div>
-`;
-
-        // Auto-abrir en nueva pestaña para imprimir
-        setTimeout(() => {
-            window.open(pdfUrl, '_blank');
-        }, 1000);
-
-    } catch (error) {
-        console.error('❌ Error generando PDF:', error);
-        document.getElementById('progreso-reporte').innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
-    }
-}
     </script>
 </body>
 </html>
