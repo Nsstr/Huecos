@@ -572,7 +572,7 @@
                 console.log('📥 Cargando tabla de referencia...');
                 const estadoTabla = document.getElementById('estado-tabla');
                 
-                const response = await fetch('/data.csv');
+                const response = await fetch('./data.csv');
                 if (!response.ok) {
                     throw new Error(`Error HTTP: ${response.status}`);
                 }
