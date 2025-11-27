@@ -320,12 +320,19 @@
         }
         
         .auto-navigate {
-            margin-top: 15px;
-            padding: 10px;
-            background-color: #e8f4fd;
-            border-radius: var(--border-radius);
-            border-left: 4px solid var(--secondary-color);
-        }
+    position: fixed;
+    top: 80px; /* Debajo del primer mensaje */
+    right: 20px;
+    z-index: 999;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-width: 400px;
+    background-color: #e8f4fd;
+    color: #004085;
+    border: 1px solid #b3d7ff;
+    animation: slideIn 0.3s ease;
+}
         
         .loading {
             display: inline-block;
@@ -1014,7 +1021,11 @@ if (firebaseReady) {
 
                 mostrarEstado(mensajeExito, "success");
 
-                document.getElementById('auto-navigate').style.display = 'block';
+                const autoNavigateEl = document.getElementById('auto-navigate');
+autoNavigateEl.style.display = 'block';
+setTimeout(() => {
+    autoNavigateEl.style.display = 'none';
+}, 8000);
 
 // Navegación INMEDIATA (no esperar 3 segundos)
 setTimeout(() => {
