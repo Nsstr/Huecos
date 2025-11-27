@@ -484,115 +484,130 @@
 
         let fechaActual = obtenerFechaActual();
 
-        // NUEVAS FUNCIONES GOOGLE SHEETS
-        async function guardarEnGoogleSheets(datosProcesados) {
-            try {
-                console.log('💾 Guardando en Google Sheets...');
-                
-                const productos = datosProcesados.productosConInfo || [];
-                const fecha = datosProcesados.fecha;
-                
-                if (productos.length === 0) {
-                    console.log('⚠️ No hay productos para guardar');
-                    return false;
-                }
+          // REEMPLAZA las funciones de Google Sheets con estas:
 
-                const response = await fetch(GOOGLE_SHEETS_API, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: 'guardar',
-                        fecha: fecha,
-                        productos: productos
-                    })
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    console.log(`✅ Datos guardados en Sheets: ${result.registros} productos`);
-                    return true;
-                } else {
-                    console.error('❌ Error guardando en Sheets:', result.error);
-                    return false;
-                }
-                
-            } catch (error) {
-                console.error('❌ Error guardando en Google Sheets:', error);
-                return false;
-            }
+async function guardarEnGoogleSheets(datosProcesados) {
+    try {
+        console.log('💾 Guardando en Google Sheets...');
+        
+        const productos = datosProcesados.productosConInfo || [];
+        const fecha = datosProcesados.fecha;
+        
+        if (productos.length === 0) {
+            console.log('⚠️ No hay productos para guardar');
+            return false;
         }
 
-        async function cargarDesdeGoogleSheets(fecha) {
-            try {
-                console.log(`📥 Cargando datos históricos para: ${fecha}`);
-                
-                const response = await fetch(GOOGLE_SHEETS_API, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: 'cargar',
-                        fecha: fecha
-                    })
-                });
+        const response = await fetch(GOOGLE_SHEETS_API, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'guardar',
+                fecha: fecha,
+                productos: productos
+            })
+        });
 
-                const result = await response.json();
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log(`✅ Datos guardados en Sheets: ${result.registros} productos`);
+            return true;
+        } else {
+            console.error('❌ Error guardando en Sheets:', result.error);
+            return false;
+        }
+        
+    } catch (error) {
+        console.error('❌ Error guardando en Google Sheets:', error);
+        return false;
+    }
+}
+
+async function cargarDesdeGoogleSheets(fecha) {
+    return new Promise((resolve) => {
+        console.log(`📥 Cargando datos históricos para: ${fecha}`);
+        
+        // Usar JSONP para evitar CORS
+        const callbackName = 'jsonp_callback_' + Date.now();
+        const script = document.createElement('script');
+        
+        window[callbackName] = function(data) {
+            delete window[callbackName];
+            document.body.removeChild(script);
+            
+            if (data.success && data.productos.length > 0) {
+                console.log(`✅ Datos cargados desde Sheets: ${data.productos.length} productos`);
                 
-                if (result.success && result.productos.length > 0) {
-                    console.log(`✅ Datos cargados desde Sheets: ${result.productos.length} productos`);
+                // Reconstruir la estructura de datosCargados
+                const productosConInfo = data.productos.map(producto => ({
+                    sku: producto.sku,
+                    descripcion: producto.descripcion,
+                    deptId: producto.deptId,
+                    pasillo: producto.pasillo,
+                    stock: producto.stock,
+                    upc: producto.upc
+                }));
+
+                // Reconstruir departamentos para el resumen
+                const departamentos = {};
+                let totalItems = 0;
+
+                productosConInfo.forEach(producto => {
+                    const codigoDepto = producto.deptId;
+                    const nombreDepto = obtenerNombreDepartamento(codigoDepto);
                     
-                    // Reconstruir la estructura de datosCargados
-                    const productosConInfo = result.productos.map(producto => ({
-                        sku: producto.sku,
-                        descripcion: producto.descripcion,
-                        deptId: producto.deptId,
-                        pasillo: producto.pasillo,
-                        stock: producto.stock,
-                        upc: producto.upc
-                    }));
+                    if (!departamentos[codigoDepto]) {
+                        departamentos[codigoDepto] = {
+                            nombre: nombreDepto,
+                            cantidad: 0
+                        };
+                    }
+                    
+                    departamentos[codigoDepto].cantidad += 1;
+                    totalItems += 1;
+                });
 
-                    // Reconstruir departamentos para el resumen
-                    const departamentos = {};
-                    let totalItems = 0;
-
-                    productosConInfo.forEach(producto => {
-                        const codigoDepto = producto.deptId;
-                        const nombreDepto = obtenerNombreDepartamento(codigoDepto);
-                        
-                        if (!departamentos[codigoDepto]) {
-                            departamentos[codigoDepto] = {
-                                nombre: nombreDepto,
-                                cantidad: 0
-                            };
-                        }
-                        
-                        departamentos[codigoDepto].cantidad += 1;
-                        totalItems += 1;
-                    });
-
-                    return {
-                        fecha: fecha,
-                        productosConInfo: productosConInfo,
-                        departamentos: departamentos,
-                        totalItems: totalItems,
-                        lineasProcesadas: productosConInfo.length,
-                        lineasTotales: productosConInfo.length,
-                        productosSinDepartamento: [],
-                        timestamp: result.productos[0]?.timestamp || new Date().toISOString()
-                    };
-                }
-                
-                return null;
-                
-            } catch (error) {
-                console.error('❌ Error cargando desde Google Sheets:', error);
-                return null;
+                resolve({
+                    fecha: fecha,
+                    productosConInfo: productosConInfo,
+                    departamentos: departamentos,
+                    totalItems: totalItems,
+                    lineasProcesadas: productosConInfo.length,
+                    lineasTotales: productosConInfo.length,
+                    productosSinDepartamento: [],
+                    timestamp: data.productos[0]?.timestamp || new Date().toISOString()
+                });
+            } else {
+                console.log('❌ No hay datos en Google Sheets para esta fecha');
+                resolve(null);
             }
-        }
+        };
+
+        // Manejar errores de JSONP
+        script.onerror = function() {
+            delete window[callbackName];
+            document.body.removeChild(script);
+            console.error('❌ Error cargando desde Google Sheets: JSONP failed');
+            resolve(null);
+        };
+
+        script.src = GOOGLE_SHEETS_API + `?action=cargar&fecha=${fecha}&callback=${callbackName}`;
+        document.body.appendChild(script);
+        
+        // Timeout después de 10 segundos
+        setTimeout(() => {
+            if (window[callbackName]) {
+                delete window[callbackName];
+                document.body.removeChild(script);
+                console.error('❌ Timeout cargando desde Google Sheets');
+                resolve(null);
+            }
+        }, 10000);
+    });
+}
 
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
