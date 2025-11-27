@@ -961,23 +961,21 @@ async function cargarDesdeGoogleSheets(fecha) {
                     timestamp: new Date().toISOString()
                 };
 
-                // NUEVO: Guardar también en Google Sheets
-                const guardadoEnSheets = await guardarEnGoogleSheets(datosCargados[fecha]);
-                
-               if (guardadoEnSheets) {
+               // NUEVO: Guardar también en Google Sheets
+const guardadoEnSheets = await guardarEnGoogleSheets(datosCargados[fecha]);
+
+// ACTUALIZAR FECHA DEL REPORTE AUTOMÁTICAMENTE
+actualizarFechaReporte();
+
+let mensajeExito = `✅ ${lineasProcesadas} productos procesados - ${totalItems} items en ${Object.keys(departamentos).length} departamentos`;
+if (productosSinDepartamento.length > 0) {
+    mensajeExito += ` (${productosSinDepartamento.length} productos sin departamento)`;
+}
+if (guardadoEnSheets) {
     mensajeExito += ` - 💾 Datos listos para Google Sheets`;
 }
 
-                // ACTUALIZAR FECHA DEL REPORTE AUTOMÁTICAMENTE
-                actualizarFechaReporte();
-
-                let mensajeExito = `✅ ${lineasProcesadas} productos procesados - ${totalItems} items en ${Object.keys(departamentos).length} departamentos`;
-                if (productosSinDepartamento.length > 0) {
-                    mensajeExito += ` (${productosSinDepartamento.length} productos sin departamento)`;
-                }
-                if (guardadoEnSheets) {
-                    mensajeExito += ` - 💾 Guardado en Google Sheets`;
-                }
+mostrarEstado(mensajeExito, "success");
 
                 mostrarEstado(mensajeExito, "success");
 
