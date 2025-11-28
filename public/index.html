@@ -7,13 +7,13 @@
     <title>Reporte de Huecos en Góndola</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     
-    <!-- Firebase SDK -->
+
     <script type="module">
-        // Import the functions you need from the SDKs you need
+
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, query, where, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         
-        // Your web app's Firebase configuration
+
         const firebaseConfig = {
             apiKey: "AIzaSyBvL_rQFZf8427SuBG8Ua_7YNlNY9kclZ4",
             authDomain: "huecos-96c8c.firebaseapp.com",
@@ -24,11 +24,11 @@
             measurementId: "G-0YDTR33E5S"
         };
 
-        // Initialize Firebase
+
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         
-        // Make Firebase available globally
+
         window.firebase = { 
             db, 
             collection, 
@@ -43,7 +43,7 @@
         
         console.log('🔥 Firebase SDK cargado correctamente');
         
-        // Marcar que Firebase está listo
+
         window.firebaseLoaded = true;
     </script>
 
@@ -321,7 +321,7 @@
         
         .auto-navigate {
     position: fixed;
-    top: 80px; /* Debajo del primer mensaje */
+    top: 80px; 
     right: 20px;
     z-index: 999;
     padding: 15px 20px;
@@ -335,12 +335,12 @@
 }
         
 
-/* Notificaciones flotantes */
+
 .notificacion-flotante {
     position: fixed;
     top: 20px;
     right: 20px;
-    z-index: 10000; /* Muy alto para estar por encima de todo */
+    z-index: 10000; 
     padding: 15px 20px;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -476,7 +476,7 @@
 }
     </style>
     
-    <!-- Incluir jsPDF y autoTable -->
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 </head>
@@ -484,26 +484,26 @@
 <body>
     <div class="container">
         <header>
-            <h1>Sistema de Huecos en Góndola</h1>
+            <h1>Reporte de Huecos en Góndola</h1>
             <nav>
                 <button id="btn-cargar" class="nav-btn active">Cargar Datos</button>
                 <button id="btn-resumen" class="nav-btn">Ver Resumen</button>
                 <button id="btn-reporte" class="nav-btn">Generar Reporte</button>
-                <button id="btn-historico" class="nav-btn">Cargar Histórico</button>
+                <button id="btn-historico" class="nav-btn">Historico</button>
             </nav>
         </header>
 
         <main>
-            <!-- Sección Cargar Datos -->
+
             <section id="seccion-cargar" class="seccion-activa">
                 <h2>Cargar Datos CSV</h2>
                 
-                <!-- Estado de Firebase -->
+
                 <div id="firebase-status" class="firebase-status" style="display: none;">
                     <span class="loading"></span> Conectando con Firebase...
                 </div>
                 
-                <!-- Estado de carga de la tabla referencia -->
+
                 <div id="estado-tabla" class="contador-lineas">
                     <span class="loading"></span> Cargando tabla de referencia...
                 </div>
@@ -522,7 +522,7 @@
                 <div id="auto-navigate" class="auto-navigate" style="display: none;"></div>
             </section>
 
-            <!-- Sección Resumen -->
+
             <section id="seccion-resumen" class="seccion-oculta">
                 <h2>Resumen por Departamento</h2>
                 <div class="date-selector">
@@ -531,11 +531,11 @@
                     <button id="btn-cargar-desde-firebase">Actualizar</button>
                 </div>
                 <div id="resumen-contenido" class="resumen-container">
-                    <!-- Aquí se cargará el resumen dinámicamente -->
+
                 </div>
             </section>
 
-            <!-- Sección Reporte -->
+
             <section id="seccion-reporte" class="seccion-oculta">
                 <h2>Generar Reporte PDF</h2>
                 <div class="date-selector">
@@ -547,7 +547,7 @@
                     <label for="pasillo-reporte">Pasillo (opcional):</label>
                     <select id="pasillo-reporte">
                         <option value="">Todos los pasillos</option>
-                        <!-- Se llenará dinámicamente -->
+
                     </select>
                 </div>
                 <button id="btn-generar-pdf">Generar Reporte PDF</button>
@@ -557,7 +557,7 @@
                 <div id="resultado-reporte"></div>
             </section>
 
-            <!-- Nueva Sección: Cargar Histórico -->
+
             <section id="seccion-historico" class="seccion-oculta">
                 <h2>Cargar Datos Históricos</h2>
                 <div class="form-group">
@@ -571,7 +571,7 @@
     </div>
 
     <script>
-        // CONFIGURACIÓN
+
         const MAPA_DEPARTAMENTOS = {
             "1": "Galletitas y Golosinas", "82": "Checkout", "92": "Almacen seco", "95": "Bebidas sin alcohol", "96": "Bebidas con alcohol",
             "2": "Perfumeria", "4": "Papeles", "8": "Mascotas", "13": "Quimicos", "26": "Bebes", "46": "Cosmeticos", "21": "AVES", "43": "Carne Vacuno",
@@ -584,31 +584,31 @@
             "22": "Blancos", "74": "Organizacion", "40": "Farmacia Venta Libre", "10": "Automotor", "37": "TLE servicio"
         };
 
-        // Variables globales
+
         let tablaReferencia = new Map();
         let tablaProductosCompleta = new Map();
         let datosCargados = {};
         let fechaActual = obtenerFechaActual();
         let firebaseReady = false;
-        // NUEVA VARIABLE: Control de guardado en segundo plano
+
 let guardadoFirebaseEnProgreso = false;
 
-        // FUNCIONES FIREBASE - CORREGIDAS
+
         async function inicializarFirebase() {
             try {
                 const statusEl = document.getElementById('firebase-status');
                 statusEl.style.display = 'block';
                 statusEl.innerHTML = '<span class="loading"></span> Conectando con Firebase...';
                 
-                // Esperar a que Firebase esté disponible
+
                 await esperarFirebase();
                 
-                // Verificar que Firebase esté disponible
+
                 if (!window.firebase || !window.firebase.db) {
                     throw new Error('Firebase no se inicializó correctamente');
                 }
                 
-                // Intentar una operación simple de lectura
+
                 console.log('🔍 Probando conexión con Firestore...');
                 const testCollection = window.firebase.collection(window.firebase.db, "test_connection");
                 const testQuery = window.firebase.query(testCollection);
@@ -626,7 +626,7 @@ let guardadoFirebaseEnProgreso = false;
                     console.log('✅ Firebase inicializado correctamente');
                     return true;
                 } catch (firestoreError) {
-                    // Error específico de Firestore (probablemente permisos)
+
                     if (firestoreError.code === 'permission-denied' || firestoreError.message.includes('permission')) {
                         throw new Error('PERMISSIONS_ERROR: ' + firestoreError.message);
                     } else {
@@ -662,7 +662,7 @@ let guardadoFirebaseEnProgreso = false;
             }
         }
 
-        // Función para esperar a que Firebase esté disponible
+
         function esperarFirebase() {
             return new Promise((resolve, reject) => {
                 let intentos = 0;
@@ -673,7 +673,7 @@ let guardadoFirebaseEnProgreso = false;
                     if (window.firebase && window.firebase.db) {
                         resolve();
                     } else if (window.firebaseLoaded && intentos >= 10) {
-                        // Si Firebase marcó que se cargó pero no está disponible
+
                         resolve();
                     } else if (intentos >= maxIntentos) {
                         reject(new Error('Timeout: Firebase no se cargó en 5 segundos'));
@@ -686,18 +686,16 @@ let guardadoFirebaseEnProgreso = false;
             });
         }
 
-       // FUNCIÓN MEJORADA: Guardar en Firebase en segundo plano (no bloqueante)
+
 async function guardarEnFirebaseEnSegundoPlano(datosProcesados) {
     if (!firebaseReady) {
         console.log('⚠️ Firebase no disponible, solo guardando localmente');
         return false;
     }
 
-    // Marcar que el guardado está en progreso
+
     guardadoFirebaseEnProgreso = true;
-    
-    // Mostrar indicador de guardado en segundo plano
-    // mostrarEstado("⏳ Guardando en la nube (segundo plano)...", "processing");
+
     
     try {
         console.log('💾 Iniciando guardado en segundo plano en Firebase...');
@@ -712,7 +710,7 @@ async function guardarEnFirebaseEnSegundoPlano(datosProcesados) {
             return false;
         }
 
-        // Crear documento principal para la fecha
+
         const fechaDocRef = doc(db, "huecos_gondola", fecha);
         await setDoc(fechaDocRef, {
             fecha: fecha,
@@ -724,17 +722,17 @@ async function guardarEnFirebaseEnSegundoPlano(datosProcesados) {
             timestamp: new Date().toISOString()
         });
 
-        // Guardar productos en subcolección
+
         const productosCollectionRef = collection(fechaDocRef, "productos");
         
-        // Guardar productos en lotes más pequeños para mayor estabilidad
+
         const batchSize = 50;
         let productosGuardados = 0;
         
         for (let i = 0; i < productos.length; i += batchSize) {
             const batch = productos.slice(i, i + batchSize);
             
-            // Guardar uno por uno para mejor manejo de errores
+
             for (const producto of batch) {
                 await addDoc(productosCollectionRef, {
                     sku: producto.sku || '',
@@ -750,7 +748,7 @@ async function guardarEnFirebaseEnSegundoPlano(datosProcesados) {
             
             console.log(`✅ Lote ${Math.floor(i/batchSize) + 1} guardado: ${batch.length} productos`);
             
-            // Actualizar estado periódicamente
+
             if (productosGuardados % 200 === 0) {
                 mostrarEstado(`⏳ Guardando en la nube... (${productosGuardados}/${productos.length})`, "processing");
             }
@@ -793,10 +791,10 @@ async function guardarEnFirebaseEnSegundoPlano(datosProcesados) {
                     return null;
                 }
 
-                // Cargar datos principales
+
                 const datosFecha = fechaDoc.data();
                 
-                // Cargar productos de la subcolección
+
                 const productosCollectionRef = collection(fechaDocRef, "productos");
                 const productosSnapshot = await getDocs(productosCollectionRef);
                 const productosConInfo = [];
@@ -805,7 +803,7 @@ async function guardarEnFirebaseEnSegundoPlano(datosProcesados) {
                     productosConInfo.push(doc.data());
                 });
 
-                // Reconstruir el objeto de datos completo
+
                 const datosCompletos = {
                     ...datosFecha,
                     productosConInfo: productosConInfo
@@ -827,7 +825,7 @@ async function guardarEnFirebaseEnSegundoPlano(datosProcesados) {
             }
         }
 
-        // FUNCIONES PRINCIPALES
+
         function obtenerFechaActual() {
             const ahora = new Date();
             const año = ahora.getFullYear();
@@ -885,25 +883,25 @@ async function guardarEnFirebaseEnSegundoPlano(datosProcesados) {
         function mostrarSeccion(seccion) {
             console.log('🔍 Mostrando sección:', seccion);
             
-            // Ocultar todas las secciones
+
             document.querySelectorAll('section').forEach(sec => {
                 sec.classList.remove('seccion-activa');
                 sec.classList.add('seccion-oculta');
             });
             
-            // Mostrar la sección seleccionada
+
             const seccionElement = document.getElementById(`seccion-${seccion}`);
             if (seccionElement) {
                 seccionElement.classList.remove('seccion-oculta');
                 seccionElement.classList.add('seccion-activa');
             }
             
-            // Actualizar botones de navegación
+
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
             
-            // Activar el botón correspondiente
+
             const boton = document.getElementById(`btn-${seccion}`);
             if (boton) {
                 boton.classList.add('active');
@@ -916,7 +914,7 @@ async function guardarEnFirebaseEnSegundoPlano(datosProcesados) {
     
     const contador = document.getElementById('contador-lineas');
     
-    // Mostrar solo el número de líneas
+
     if (lineas.length > 0) {
         contador.textContent = lineas.length;
     } else {
@@ -977,13 +975,13 @@ async function guardarEnFirebaseEnSegundoPlano(datosProcesados) {
                 let productosSinDepartamento = [];
                 let productosConInfo = [];
 
-                // Saltar la primera línea (encabezados)
+
                 const lineasDatos = lineas.slice(1);
 
                 for (const linea of lineasDatos) {
                     const partes = linea.split(',').map(p => p.trim());
                     
-                    // Verificar que tenga suficientes columnas para el stock (posición 7)
+
                     if (partes.length >= 9) {
                         const sku = partes[0];
                         const stock = partes[7];
@@ -1006,7 +1004,7 @@ async function guardarEnFirebaseEnSegundoPlano(datosProcesados) {
                                 totalItems += 1;
                                 lineasProcesadas++;
 
-                                // CONVERSIÓN ROBUSTA DEL STOCK
+
                                 let stockNumero;
                                 if (stock && !isNaN(stock) && stock.trim() !== '') {
                                     stockNumero = parseInt(stock);
@@ -1014,7 +1012,7 @@ async function guardarEnFirebaseEnSegundoPlano(datosProcesados) {
                                     stockNumero = 0;
                                 }
 
-                                // Validar que sea un número válido
+
                                 if (isNaN(stockNumero)) {
                                     stockNumero = 0;
                                 }
@@ -1035,7 +1033,7 @@ async function guardarEnFirebaseEnSegundoPlano(datosProcesados) {
                     }
                 }
 
-                // Guardar datos procesados
+
                 datosCargados[fecha] = {
                     fecha: fecha,
                     csv: csvNormalizado,
@@ -1048,11 +1046,9 @@ async function guardarEnFirebaseEnSegundoPlano(datosProcesados) {
                     timestamp: new Date().toISOString()
                 };
 
-                // NUEVO: Guardar en Firebase
-                // NUEVO: Guardar en Firebase EN SEGUNDO PLANO (no bloqueante)
 let guardadoEnFirebase = false;
 if (firebaseReady) {
-    // Iniciar guardado en segundo plano sin await
+
     guardarEnFirebaseEnSegundoPlano(datosCargados[fecha])
         .then(resultado => {
             guardadoEnFirebase = resultado;
@@ -1065,7 +1061,7 @@ if (firebaseReady) {
     console.log('⚠️ Firebase no disponible, solo guardando localmente');
 }
 
-                // ACTUALIZAR FECHA DEL REPORTE AUTOMÁTICAMENTE
+
                 actualizarFechaReporte();
 
                 let mensajeExito = `✅ ${lineasProcesadas} productos procesados - ${totalItems} items en ${Object.keys(departamentos).length} departamentos`;
@@ -1081,10 +1077,6 @@ if (firebaseReady) {
 
                 mostrarEstado(mensajeExito, "success");
 
-                // En lugar de mostrar el elemento auto-navigate, usar notificación flotante
-
-
-// Y agrega el event listener para el nuevo link
 setTimeout(() => {
     const link = document.getElementById('link-ver-resumen-flotante');
     if (link) {
@@ -1096,16 +1088,16 @@ setTimeout(() => {
     }
 }, 100);
 
-// Navegación INMEDIATA (no esperar 3 segundos)
+
 setTimeout(() => {
     mostrarSeccion('resumen');
     document.getElementById('fecha-resumen').value = fecha;
     mostrarResumenDesdeDatosCargados();
-}, 500); // Reducido a 0.5 segundos para mayor velocidad
+}, 500); 
 
                 document.getElementById('texto-csv').value = '';
                 actualizarContadorLineas();
-                // Configurar sistemas de prevención
+                
 configurarPrevencionCierre();
 configurarPrevencionNavegacion();
 console.log('🛡️ Sistema de prevención de cierre configurado');
@@ -1128,13 +1120,13 @@ console.log('🛡️ Sistema de prevención de cierre configurado');
 
             let datosFecha = datosCargados[fechaResumen];
             
-            // NUEVO: Si no hay datos locales, intentar cargar desde Firebase
+
             if (!datosFecha) {
                 mostrarEstado("⏳ Cargando datos desde Firebase...", "processing");
                 datosFecha = await cargarDesdeFirebase(fechaResumen);
                 
                 if (datosFecha) {
-                    // Guardar en datos locales para uso futuro
+
                     datosCargados[fechaResumen] = datosFecha;
                     mostrarEstado("✅ Datos cargados desde Firebase", "success");
                 } else {
@@ -1152,26 +1144,26 @@ console.log('🛡️ Sistema de prevención de cierre configurado');
             const contenedor = document.getElementById('resumen-contenido');
             if (!contenedor) return;
 
-            // USAR LA FECHA DEL SELECTOR, NO LA DE LOS DATOS
+
             const fechaSelector = document.getElementById('fecha-resumen').value;
             const [anio, mes, dia] = fechaSelector.split('-');
             const fechaFormateada = `${dia}/${mes}/${anio}`;
             
             const departamentos = datos.departamentos;
             
-            // Ordenar departamentos por cantidad (mayor a menor)
+
             const deptosOrdenados = Object.keys(departamentos).sort((a, b) => {
                 return departamentos[b].cantidad - departamentos[a].cantidad;
             });
 
             let tablaHTML = '';
 
-            // Generar tabla
+
             deptosOrdenados.forEach(codigoDepto => {
                 const info = departamentos[codigoDepto];
                 const nombreDepto = info.nombre;
                 
-                // Tabla
+
                 tablaHTML += `
                     <tr>
                         <td><strong>${codigoDepto}</strong></td>
@@ -1183,24 +1175,23 @@ console.log('🛡️ Sistema de prevención de cierre configurado');
 
             let productosSinDeptoHTML = '';
             if (datos.productosSinDepartamento && datos.productosSinDepartamento.length > 0) {
-                // Obtener todas las líneas del CSV original que pegó el usuario
+
                 const lineasCSV = datos.csv.split('\n');
                 
-                // Encabezados de data.csv (estructura objetivo)
+
                 const encabezadosDataCSV = "SKU ID,Clase DESC,Dept ID,Pasillo,SKU DESC,Código SKU ID,Clase ID CATEGORIA,División DESC,largo de codigo";
                 const nombresCampos = encabezadosDataCSV.split(',');
                 
-                // Filtrar y reconstruir las líneas con la estructura de data.csv
-                let lineasSinDepto = [encabezadosDataCSV]; // Empezar con los encabezados de data.csv
+
+                let lineasSinDepto = [encabezadosDataCSV]; 
                 
                 lineasCSV.slice(1).forEach(linea => {
                     const partes = linea.split(',').map(p => p.trim());
                     const sku = partes[0];
                     
-                    // Verificar si este SKU está en la lista de productos sin departamento
+
                     if (sku && datos.productosSinDepartamento.includes(sku)) {
-                        // Reconstruir la línea con la estructura de data.csv
-                        // Los campos vacíos se reemplazan por el nombre del encabezado
+
                         const lineaReconstruida = [
                             partes[0] || nombresCampos[0], // SKU ID
                             partes[1] || nombresCampos[1], // Clase DESC  
@@ -1294,10 +1285,10 @@ ${lineasSinDepto.join('\n')}</pre>
     notificacion.className = `notificacion-flotante notificacion-${tipo}`;
     notificacion.innerHTML = mensaje;
     
-    // Agregar al body (por encima de todo)
+
     document.body.appendChild(notificacion);
     
-    // Auto-eliminar después del tiempo especificado
+
     setTimeout(() => {
         notificacion.style.animation = 'slideOut 0.3s ease';
         setTimeout(() => {
@@ -1487,20 +1478,20 @@ function mostrarNotificacionNavegacion(mensaje, duracion = 8000) {
 
                 // Para cada pasillo
                 Object.keys(productosPorPasillo).sort().forEach((pasillo, index) => {
-                    // Salto de página si no es el primer pasillo
+
                     if (index > 0) {
                         doc.addPage();
                     }
 
                     let currentY = marginTop;
 
-                    // Título principal COMPACTO
+
                     doc.setFontSize(10);
                     doc.setFont(undefined, 'bold');
                     doc.text(`Reporte de Huecos en Góndola del ${fechaReportePDF}`, marginLeft, currentY);
                     currentY += 5;
 
-                    // Título del pasillo COMPACTO
+
                     doc.setFontSize(9);
                     doc.setFont(undefined, 'bold');
                     doc.text(`Pasillo: ${pasillo}`, marginLeft, currentY);
@@ -1535,7 +1526,7 @@ function mostrarNotificacionNavegacion(mensaje, duracion = 8000) {
                         6: 90   // Cód Barras - SIGNIFICATIVAMENTE AUMENTADO
                     };
 
-                    // Ajustar dinámicamente el ancho de "detalle" con lo que sobra
+
                     const totalDefinedWidth = Object.values(columnWidths).reduce((a, b) => a + b, 0);
                     const extraWidth = totalUsableWidth - totalDefinedWidth;
                     if (extraWidth > 0) {
@@ -1546,7 +1537,7 @@ function mostrarNotificacionNavegacion(mensaje, duracion = 8000) {
                     console.log('📐 Ancho total definido:', totalDefinedWidth);
                     console.log('📐 Espacio extra para detalle:', extraWidth);
 
-                    // Generar tabla con COLUMNA CÓDIGO BARRAS MÁS ANCHA
+
                     doc.autoTable({
                         startY: currentY,
                         head: [['depto', '*', 'sku', 'detalle', 'PI', 'Código', 'Cód Barras']],
@@ -1592,7 +1583,7 @@ function mostrarNotificacionNavegacion(mensaje, duracion = 8000) {
                             }
                         },
                         didDrawCell: function(data) {
-                            // Solo procesar celdas del cuerpo en la columna de códigos de barras
+
                             if (data.section === 'body' && data.column.index === 6) {
                                 const productoIndex = data.row.index;
                                 const productosDelPasillo = productosPorPasillo[pasillo];
