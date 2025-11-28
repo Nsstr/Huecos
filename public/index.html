@@ -589,6 +589,13 @@
         <button id="btn-resumen" class="nav-btn">Ver Resumen</button>
         <button id="btn-reporte" class="nav-btn">Generar Reporte</button>
         <button id="btn-historico" class="nav-btn">Historico</button>
+        <button id="btn-metricas" class="nav-btn" style="
+    background-color: #000000; 
+    color: #f8f9fa; 
+    border: 1px solid #7f8080;
+    font-weight: 500;
+    opacity: 0.9;
+">Métricas</button>
     </nav>
 
 
@@ -1995,7 +2002,9 @@ function mostrarNotificacionNavegacion(mensaje, duracion = 8000) {
             
             document.getElementById('btn-generar-pdf').addEventListener('click', generarReportePDF);
             document.getElementById('btn-cargar-historico').addEventListener('click', cargarHistoricoDesdeFirebase);
-
+            document.getElementById('btn-metricas').addEventListener('click', () => {
+    window.location.href = 'metricas.html';
+});
             actualizarContadorLineas();
             console.log('✅ Aplicación inicializada correctamente');
         }
