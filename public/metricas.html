@@ -305,6 +305,126 @@
                 height: 300px;
             }
         }
+
+        .heatmap-controls {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: var(--border-radius);
+}
+
+.heatmap-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.heatmap-table th {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 8px 4px;
+    text-align: center;
+    font-weight: 600;
+    border: 1px solid #ddd;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.heatmap-table th.fecha-header {
+    background-color: var(--dark-color);
+    font-size: 11px;
+}
+
+.heatmap-table th.depto-header {
+    background-color: var(--secondary-color);
+    font-size: 10px;
+}
+
+.heatmap-table td {
+    padding: 6px 4px;
+    text-align: center;
+    border: 1px solid #e0e0e0;
+    min-width: 40px;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.heatmap-table td.tienda-name {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    text-align: left;
+    padding: 8px 12px;
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    border-right: 2px solid #ddd;
+}
+
+.heatmap-cell {
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.heatmap-cell:hover {
+    transform: scale(1.1);
+    z-index: 2;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.heatmap-cell.low { background-color: #d4edda; color: #155724; }
+.heatmap-cell.medium { background-color: #fff3cd; color: #856404; }
+.heatmap-cell.high { background-color: #f8d7da; color: #721c24; }
+.heatmap-cell.very-high { background-color: #e74c3c; color: white; }
+
+.heatmap-legend {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 15px;
+    font-size: 11px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.legend-color {
+    width: 15px;
+    height: 15px;
+    border-radius: 3px;
+}
+
+.heatmap-tooltip {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 100;
+    white-space: nowrap;
+}
+
+/* Para el select múltiple */
+select[multiple] {
+    height: 120px;
+    min-width: 200px;
+}
+
+.heatmap-table-container {
+    max-height: 600px;
+    overflow: auto;
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+}
     </style>
 </head>
 <body>
@@ -314,7 +434,7 @@
         </button>
         
         <div class="header">
-            <h1>📊 Métricas y Análisis de Huecos</h1>
+            <h1>Métricas y Análisis de Huecos</h1>
             <p>Análisis comparativo, tendencias históricas y métricas de performance</p>
         </div>
 
@@ -399,10 +519,35 @@
         </div>
 
         <!-- Tabla de datos -->
-        <div class="chart-container">
-            <h3>📋 Detalle por Día y Tienda</h3>
-            <div id="tabla-detalle"></div>
+       <!-- Tabla de Calor -->
+<div class="chart-container">
+    <h3>🔥 Tabla de Calor - Huecos por Tienda y Día</h3>
+    <div class="heatmap-controls">
+    <div class="filter-group">
+        <label>Departamentos fijos:</label>
+        <div style="padding: 8px; background: white; border-radius: 4px; border: 1px solid #ddd; min-width: 200px;">
+            1, 2, 4, 46, 13, 92, 95, 96
         </div>
+    </div>
+    <div class="filter-group">
+        <label for="select-rango-calor">Rango de días:</label>
+        <select id="select-rango-calor" onchange="generarTablaCalor()">
+            <option value="7">Últimos 7 días</option>
+            <option value="14">Últimos 14 días</option>
+            <option value="30">Últimos 30 días</option>
+            <option value="90">Últimos 3 meses</option>
+            <option value="all">Todos los días</option>
+        </select>
+    </div>
+</div>
+    <div id="tabla-calor-container" style="overflow-x: auto; margin-top: 20px;"></div>
+</div>
+
+<!-- Tabla de datos original (la mantenemos por si acaso) -->
+<div class="chart-container">
+    <h3>📋 Detalle por Día y Tienda</h3>
+    <div id="tabla-detalle"></div>
+</div>
     </div>
 
     <script>
@@ -569,28 +714,31 @@
             document.getElementById('depto-mas-huecos').textContent = '-';
         }
 
-        function generarGraficos() {
-            // Destruir gráficos existentes
-            Object.values(charts).forEach(chart => {
-                if (chart) chart.destroy();
-            });
+       function generarGraficos() {
+    // Destruir gráficos existentes
+    Object.values(charts).forEach(chart => {
+        if (chart) chart.destroy();
+    });
 
-            if (datosMetricas.length === 0) {
-                return;
-            }
+    if (datosMetricas.length === 0) {
+        return;
+    }
 
-            // Gráfico de evolución temporal
-            generarGraficoEvolucion();
-            
-            // Gráfico de departamentos
-            generarGraficoDepartamentos();
-            
-            // Gráfico de tiendas
-            generarGraficoTiendas();
-            
-            // Generar tabla
-            generarTablaDetalle();
-        }
+    // Gráfico de evolución temporal
+    generarGraficoEvolucion();
+    
+    // Gráfico de departamentos
+    generarGraficoDepartamentos();
+    
+    // Gráfico de tiendas
+    generarGraficoTiendas();
+    
+    // Generar tabla de calor
+    generarTablaCalor();
+    
+    // Generar tabla detalle
+    generarTablaDetalle();
+}
 
         function generarGraficoEvolucion() {
             const ctx = document.getElementById('chart-evolucion').getContext('2d');
@@ -820,6 +968,223 @@
                 }, 3000);
             }
         }
+
+
+        function generarTablaCalor() {
+    const container = document.getElementById('tabla-calor-container');
+    
+    if (datosMetricas.length === 0) {
+        container.innerHTML = '<div class="status-message status-processing">No hay datos para generar la tabla de calor</div>';
+        return;
+    }
+
+    // Departamentos fijos
+    const departamentosFijos = ['1', '2', '4', '46', '13', '92', '95', '96'];
+    
+    // Obtener rango de fechas
+    const rangoDias = document.getElementById('select-rango-calor').value;
+    let fechaLimite = new Date();
+    
+    if (rangoDias !== 'all') {
+        fechaLimite.setDate(fechaLimite.getDate() - parseInt(rangoDias));
+    }
+
+    // Agrupar datos por tienda y fecha
+    const datosAgrupados = {};
+    const fechasUnicas = new Set();
+    const tiendasUnicas = new Set();
+
+    datosMetricas.forEach(registro => {
+        if (rangoDias !== 'all') {
+            const fecha = new Date(registro.fecha);
+            if (fecha < fechaLimite) return;
+        }
+
+        const tiendaId = registro.idTienda;
+        const fechaStr = registro.fecha;
+        
+        fechasUnicas.add(fechaStr);
+        tiendasUnicas.add(tiendaId);
+
+        if (!datosAgrupados[tiendaId]) {
+            datosAgrupados[tiendaId] = {};
+        }
+
+        // Obtener cantidades por departamentos fijos
+        const deptos = registro.departamentos || {};
+        departamentosFijos.forEach(deptoId => {
+            if (!datosAgrupados[tiendaId][fechaStr]) {
+                datosAgrupados[tiendaId][fechaStr] = {};
+            }
+            datosAgrupados[tiendaId][fechaStr][deptoId] = deptos[deptoId]?.cantidad || 0;
+        });
+    });
+
+    // Ordenar fechas (más recientes primero)
+    const fechasOrdenadas = Array.from(fechasUnicas).sort().reverse();
+    const tiendasOrdenadas = Array.from(tiendasUnicas).sort();
+
+    // Si no hay datos después del filtro
+    if (fechasOrdenadas.length === 0 || tiendasOrdenadas.length === 0) {
+        container.innerHTML = '<div class="status-message status-processing">No hay datos en el rango seleccionado</div>';
+        return;
+    }
+
+    // Generar HTML de la tabla
+    let html = `
+        <div class="heatmap-table-container">
+            <table class="heatmap-table">
+                <thead>
+                    <tr>
+                        <th class="tienda-header" rowspan="2">Tienda</th>`;
+
+    // Encabezados de fechas
+    fechasOrdenadas.forEach(fecha => {
+        html += `<th class="fecha-header" colspan="${departamentosFijos.length}">${formatearFechaCorta(fecha)}</th>`;
+    });
+
+    html += `</tr><tr>`;
+
+    // Encabezados de departamentos fijos (repetidos por cada fecha)
+    fechasOrdenadas.forEach(() => {
+        departamentosFijos.forEach(deptoId => {
+            const nombreCorto = MAPA_DEPARTAMENTOS[deptoId] ? 
+                MAPA_DEPARTAMENTOS[deptoId].split(' ')[0] : deptoId;
+            html += `<th class="depto-header" title="${MAPA_DEPARTAMENTOS[deptoId] || 'Depto ' + deptoId}">
+                        ${deptoId}
+                    </th>`;
+        });
+    });
+
+    html += `</tr></thead><tbody>`;
+
+    // Filas de datos
+    tiendasOrdenadas.forEach(tiendaId => {
+        const tiendaNombre = METADATA_TIENDAS[tiendaId]?.nombre || `Tienda ${tiendaId}`;
+        html += `<tr><td class="tienda-name">${tiendaNombre}</td>`;
+        
+        fechasOrdenadas.forEach(fecha => {
+            departamentosFijos.forEach(deptoId => {
+                const valor = datosAgrupados[tiendaId]?.[fecha]?.[deptoId] || 0;
+                const claseColor = obtenerClaseColor(valor);
+                
+                html += `
+                    <td class="heatmap-cell ${claseColor}" 
+                        title="${tiendaNombre} | ${formatearFechaCorta(fecha)} | ${MAPA_DEPARTAMENTOS[deptoId]}: ${valor} huecos"
+                        onclick="mostrarDetalleCelda('${tiendaId}', '${fecha}', '${deptoId}', ${valor})">
+                        ${valor > 0 ? valor : '-'}
+                    </td>`;
+            });
+        });
+        
+        html += `</tr>`;
+    });
+
+    html += `</tbody></table></div>`;
+
+    // Agregar leyenda
+    html += `
+        <div class="heatmap-legend">
+            <div class="legend-item">
+                <div class="legend-color low"></div>
+                <span>Bajo (0-10)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color medium"></div>
+                <span>Medio (11-30)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color high"></div>
+                <span>Alto (31-60)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color very-high"></div>
+                <span>Muy Alto (61+)</span>
+            </div>
+        </div>
+        
+        <div style="margin-top: 15px; text-align: center; font-size: 12px; color: #666;">
+            💡 <strong>Tip:</strong> Haz clic en cualquier celda para ver detalles
+        </div>
+    `;
+
+    container.innerHTML = html;
+    
+    // Mostrar resumen
+    const totalCeldas = tiendasOrdenadas.length * fechasOrdenadas.length * departamentosFijos.length;
+    const celdasConDatos = Object.values(datosAgrupados).reduce((total, tiendaData) => {
+        return total + Object.keys(tiendaData).length;
+    }, 0);
+    
+    console.log(` Tabla de calor generada: ${tiendasOrdenadas.length} tiendas × ${fechasOrdenadas.length} días × ${departamentosFijos.length} deptos`);
+}
+
+function obtenerClaseColor(valor) {
+    if (valor === 0) return '';
+    if (valor <= 10) return 'low';
+    if (valor <= 30) return 'medium';
+    if (valor <= 60) return 'high';
+    return 'very-high';
+}
+
+function formatearFechaCorta(fechaStr) {
+    const fecha = new Date(fechaStr);
+    return fecha.toLocaleDateString('es-ES', { 
+        day: '2-digit', 
+        month: '2-digit' 
+    });
+}
+
+function mostrarDetalleCelda(tiendaId, fecha, deptoId, valor) {
+    const tiendaNombre = METADATA_TIENDAS[tiendaId]?.nombre || `Tienda ${tiendaId}`;
+    const deptoNombre = MAPA_DEPARTAMENTOS[deptoId] || `Departamento ${deptoId}`;
+    const fechaFormateada = new Date(fecha).toLocaleDateString('es-ES', { 
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    
+    const mensaje = `
+        🔍 <strong>Detalle de Celda:</strong><br>
+        <strong>Tienda:</strong> ${tiendaNombre} (${tiendaId})<br>
+        <strong>Fecha:</strong> ${fechaFormateada}<br>
+        <strong>Departamento:</strong> ${deptoNombre} (${deptoId})<br>
+        <strong>Huecos encontrados:</strong> ${valor}
+    `;
+    
+    // Crear un toast notification más bonito
+    const notification = document.createElement('div');
+    notification.className = 'status-message status-processing';
+    notification.style.position = 'fixed';
+    notification.style.top = '20px';
+    notification.style.right = '20px';
+    notification.style.zIndex = '1000';
+    notification.style.maxWidth = '400px';
+    notification.innerHTML = mensaje + '<br><button onclick="this.parentElement.remove()" style="margin-top: 10px; padding: 5px 10px;">Cerrar</button>';
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remover después de 8 segundos
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 8000);
+}
+
+// También necesitamos agregar el MAPA_DEPARTAMENTOS si no está
+const MAPA_DEPARTAMENTOS = {
+    "1": "Galletitas y Golosinas", "82": "Checkout", "92": "Almacen seco", "95": "Bebidas sin alcohol", "96": "Bebidas con alcohol",
+    "2": "Perfumeria", "4": "Papeles", "8": "Mascotas", "13": "Quimicos", "26": "Bebes", "46": "Cosmeticos", "21": "AVES", "43": "Carne Vacuno",
+    "78": "Pescadería Retail", "79": "Carne Retail", "83": "Pescaderia Costos", "86": "Panaderia retail", "93": "CERDO GRANJA", "98": "Panaderia costos",
+    "84": "Prod. Secos y especias", "94": "Frutas y Verduras", "69": "Fiambreria", "80": "Quesos", "81": "Rotiseria y Deli", "90": "Lacteos",
+    "91": "Congelados", "97": "Envasados", "23": "Caballeros", "24": "Ninos", "25": "Calzados", "27": "Medias y Soquetes", "28": "Bebes - Ropa",
+    "30": "Ropa interior", "33": "Ninas", "34": "Damas", "3": "Libreria", "7": "Jugueteria", "9": "Deportes", "12": "Pintureria", "16": "Jardineria",
+    "17": "Muebles", "29": "Bebes - Puericultura", "31": "Equipajes - Accesorios", "5": "Electronicos", "11": "Ferreteria", "15": "PEQ ELECTRO",
+    "35": "CLIMATIZACION", "36": "LINEA BLANCA", "87": "Informatica & Mobile", "14": "Bazar", "18": "Navidad", "19": "Decoracion", "20": "Cocina y Bano",
+    "22": "Blancos", "74": "Organizacion", "40": "Farmacia Venta Libre", "10": "Automotor", "37": "TLE servicio"
+};
     </script>
 </body>
 </html>
