@@ -528,8 +528,7 @@
                 <div class="date-selector">
                     <label for="fecha-resumen">Fecha:</label>
                     <input type="date" id="fecha-resumen">
-                    <button id="btn-actualizar-resumen">Actualizar</button>
-                    <button id="btn-cargar-desde-firebase">Cargar desde Firebase</button>
+                    <button id="btn-cargar-desde-firebase">Actualizar</button>
                 </div>
                 <div id="resumen-contenido" class="resumen-container">
                     <!-- Aquí se cargará el resumen dinámicamente -->
@@ -1751,7 +1750,7 @@ function mostrarNotificacionNavegacion(mensaje, duracion = 8000) {
             
             // Configurar eventos
             document.getElementById('btn-cargar-datos').addEventListener('click', procesarDatosCSV);
-            document.getElementById('btn-actualizar-resumen').addEventListener('click', mostrarResumenDesdeDatosCargados);
+           
             document.getElementById('btn-cargar-desde-firebase').addEventListener('click', cargarYMostrarDesdeFirebase);
             
             document.getElementById('texto-csv').addEventListener('input', actualizarContadorLineas);
