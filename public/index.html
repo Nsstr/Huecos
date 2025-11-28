@@ -687,6 +687,113 @@
             "22": "Blancos", "74": "Organizacion", "40": "Farmacia Venta Libre", "10": "Automotor", "37": "TLE servicio"
         };
 
+        
+const METADATA_TIENDAS = {
+    "1057": { nombre: "Comodoro Rivadavia", distrital: "Rafael Ghirardi", region: "PATAGONIA", formato: "HCH", nombreFormato: "HiperChangoMas" },
+    "3604": { nombre: "Paraná", distrital: "TBD Centro", region: "CENTRO", formato: "HCH", nombreFormato: "HiperChangoMas" },
+    "1010": { nombre: "Córdoba Sur", distrital: "TBD Centro", region: "CENTRO", formato: "PM", nombreFormato: "PuntoMayorista" },
+    "1099": { nombre: "Posadas II", distrital: "Horacio Tupponi", region: "NEA FRONTERA", formato: "CH", nombreFormato: "ChangoMas" },
+    "1074": { nombre: "Goya (Ctes)", distrital: "Horacio Tupponi", region: "NEA", formato: "CH", nombreFormato: "ChangoMas" },
+    "1018": { nombre: "Quilmes", distrital: "Ariel Konaszczuk", region: "ZONA SUR", formato: "PM", nombreFormato: "PuntoMayorista" },
+    "1110": { nombre: "Claypole", distrital: "Ariel Konaszczuk", region: "ZONA SUR", formato: "CH", nombreFormato: "ChangoMas" },
+    "1055": { nombre: "Villa Mercedes", distrital: "Adrian Vinagre", region: "CUYO", formato: "CH", nombreFormato: "ChangoMas" },
+    "1078": { nombre: "Salta Tartagal", distrital: "Luciano Budman", region: "NOA FRONTERA", formato: "CH", nombreFormato: "ChangoMas" },
+    "1046": { nombre: "Pergamino", distrital: "Sebastian Martinelli", region: "ZONA SCH", formato: "SCH", nombreFormato: "SuperChangoMas" },
+    "1077": { nombre: "Gral Pico (La Pampa)", distrital: "Sebastian Martinelli", region: "BA Y PAMPA", formato: "CH", nombreFormato: "ChangoMas" },
+    "1098": { nombre: "R.S. Peña, Chaco", distrital: "Horacio Tupponi", region: "NEA", formato: "CH", nombreFormato: "ChangoMas" },
+    "1031": { nombre: "Jujuy", distrital: "Luciano Budman", region: "NOA FRONTERA", formato: "CH", nombreFormato: "ChangoMas" },
+    "1043": { nombre: "Laferrere", distrital: "Ricardo Masilo", region: "ZONA OESTE", formato: "HCH", nombreFormato: "HiperChangoMas" },
+    "1119": { nombre: "Moreno Derqui", distrital: "Ricardo Masilo", region: "ZONA OESTE", formato: "CH", nombreFormato: "ChangoMas" },
+    "1058": { nombre: "Resistencia", distrital: "Horacio Tupponi", region: "NEA", formato: "HCH", nombreFormato: "HiperChangoMas" },
+    "1061": { nombre: "Junín", distrital: "Sebastian Martinelli", region: "BA Y PAMPA", formato: "CH", nombreFormato: "ChangoMas" },
+    "1108": { nombre: "Puerto Madryn", distrital: "Rafael Ghirardi", region: "PATAGONIA", formato: "CH", nombreFormato: "ChangoMas" },
+    "1060": { nombre: "Fuerza Aérea (Cba)", distrital: "TBD Centro", region: "CENTRO", formato: "CH", nombreFormato: "ChangoMas" },
+    "1007": { nombre: "La Rioja", distrital: "TBD Centro", region: "NOA 1", formato: "CH", nombreFormato: "ChangoMas" },
+    "1030": { nombre: "José C Paz", distrital: "Ricardo Masilo", region: "ZONA SCH", formato: "SCH", nombreFormato: "SuperChangoMas" },
+    "1111": { nombre: "San Pedro de Jujuy", distrital: "Luciano Budman", region: "NOA FRONTERA", formato: "CH", nombreFormato: "ChangoMas" },
+    "1056": { nombre: "Villa Nueva", distrital: "TBD Centro", region: "CENTRO", formato: "CH", nombreFormato: "ChangoMas" },
+    "1116": { nombre: "Moron", distrital: "Ricardo Masilo", region: "ZONA OESTE", formato: "CH", nombreFormato: "ChangoMas" },
+    "1039": { nombre: "Paraná 2", distrital: "TBD Centro", region: "CENTRO", formato: "CH", nombreFormato: "ChangoMas" },
+    "3601": { nombre: "La Plata", distrital: "Ariel Konaszczuk", region: "ZONA SUR", formato: "HCH", nombreFormato: "HiperChangoMas" },
+    "1026": { nombre: "Catamarca", distrital: "TBD Centro", region: "NOA 1", formato: "CH", nombreFormato: "ChangoMas" },
+    "1097": { nombre: "Donato Alvarez (Cba)", distrital: "TBD Centro", region: "CENTRO", formato: "CH", nombreFormato: "ChangoMas" },
+    "1014": { nombre: "Lujan", distrital: "Ricardo Masilo", region: "ZONA NORTE", formato: "HCH", nombreFormato: "HiperChangoMas" },
+    "1011": { nombre: "Salta", distrital: "Luciano Budman", region: "NOA 1", formato: "CH", nombreFormato: "ChangoMas" },
+    "1054": { nombre: "Olavarría", distrital: "Sebastian Martinelli", region: "BA Y PAMPA", formato: "HCH", nombreFormato: "HiperChangoMas" },
+    "1100": { nombre: "Santa Rosa (La Pampa) II", distrital: "Sebastian Martinelli", region: "BA Y PAMPA", formato: "CH", nombreFormato: "ChangoMas" },
+    "1087": { nombre: "Pilar", distrital: "Ricardo Masilo", region: "ZONA NORTE", formato: "HCH", nombreFormato: "HiperChangoMas" },
+    "1080": { nombre: "Santiago del Estero Sur", distrital: "Luciano Budman", region: "NOA 1", formato: "CH", nombreFormato: "ChangoMas" },
+    "3606": { nombre: "Córdoba Este", distrital: "TBD Centro", region: "CENTRO", formato: "HCH", nombreFormato: "HiperChangoMas" },
+    "1052": { nombre: "Oran", distrital: "Luciano Budman", region: "NOA FRONTERA", formato: "CH", nombreFormato: "ChangoMas" },
+    "1024": { nombre: "Formosa", distrital: "Horacio Tupponi", region: "NEA FRONTERA", formato: "CH", nombreFormato: "ChangoMas" },
+    "1028": { nombre: "Alte Brown", distrital: "Ariel Konaszczuk", region: "ZONA SUR", formato: "CH", nombreFormato: "ChangoMas" },
+    "1114": { nombre: "Clorinda", distrital: "Horacio Tupponi", region: "NEA FRONTERA", formato: "CH", nombreFormato: "ChangoMas" },
+    "1086": { nombre: "Formosa II", distrital: "Horacio Tupponi", region: "NEA FRONTERA", formato: "CH", nombreFormato: "ChangoMas" },
+    "1059": { nombre: "Gonzalez Catán", distrital: "Ricardo Masilo", region: "ZONA OESTE", formato: "CH", nombreFormato: "ChangoMas" },
+    "1029": { nombre: "Moreno", distrital: "Ricardo Masilo", region: "ZONA OESTE", formato: "CH", nombreFormato: "ChangoMas" },
+    "1050": { nombre: "Lanús", distrital: "Ariel Konaszczuk", region: "ZONA SUR", formato: "CH", nombreFormato: "ChangoMas" },
+    "2998": { nombre: "San Justo", distrital: "Ricardo Masilo", region: "ZONA OESTE", formato: "HCH", nombreFormato: "HiperChangoMas" },
+    "2999": { nombre: "Avellaneda", distrital: "Ariel Konaszczuk", region: "ZONA SUR", formato: "HCH", nombreFormato: "HiperChangoMas" },
+    "1015": { nombre: "Maipú", distrital: "Adrian Vinagre", region: "CUYO", formato: "CH", nombreFormato: "ChangoMas" },
+    "3603": { nombre: "Santa Fe", distrital: "TBD Centro", region: "CENTRO", formato: "HCH", nombreFormato: "HiperChangoMas" },
+    "1023": { nombre: "La Pampa", distrital: "Sebastian Martinelli", region: "BA Y PAMPA", formato: "CH", nombreFormato: "ChangoMas" },
+    "1045": { nombre: "Hurlingham (AV. Vergara)", distrital: "Ricardo Masilo", region: "ZONA SCH", formato: "SCH", nombreFormato: "SuperChangoMas" },
+    "3613": { nombre: "Mendoza", distrital: "Adrian Vinagre", region: "CUYO", formato: "HCH", nombreFormato: "HiperChangoMas" },
+    "1004": { nombre: "San Fernando", distrital: "Ariel Konaszczuk", region: "ZONA NORTE", formato: "HCH", nombreFormato: "HiperChangoMas" },
+    "1085": { nombre: "Corrientes (Av. Maipú)", distrital: "Horacio Tupponi", region: "NEA", formato: "CH", nombreFormato: "ChangoMas" },
+    "1093": { nombre: "Comodoro Rivadavia Norte", distrital: "Rafael Ghirardi", region: "PATAGONIA", formato: "CH", nombreFormato: "ChangoMas" },
+    "1067": { nombre: "San Martín (Mza)", distrital: "Adrian Vinagre", region: "CUYO", formato: "CH", nombreFormato: "ChangoMas" },
+    "1042": { nombre: "Trelew", distrital: "Rafael Ghirardi", region: "PATAGONIA", formato: "CH", nombreFormato: "ChangoMas" },
+    "1008": { nombre: "Corrientes", distrital: "Horacio Tupponi", region: "NEA", formato: "HCH", nombreFormato: "HiperChangoMas" },
+    "1012": { nombre: "Santiago", distrital: "Luciano Budman", region: "NOA 1", formato: "CH", nombreFormato: "ChangoMas" },
+    "1037": { nombre: "San Martin", distrital: "Ariel Konaszczuk", region: "ZONA SCH", formato: "SCH", nombreFormato: "SuperChangoMas" },
+    "1115": { nombre: "General Roca", distrital: "Rafael Ghirardi", region: "PATAGONIA", formato: "CH", nombreFormato: "ChangoMas" },
+    "1020": { nombre: "Tucumán", distrital: "Luciano Budman", region: "NOA 1", formato: "HCH", nombreFormato: "HiperChangoMas" },
+    "1051": { nombre: "Posadas", distrital: "Horacio Tupponi", region: "NEA FRONTERA", formato: "CH", nombreFormato: "ChangoMas" },
+    "1044": { nombre: "Hurlingham (AV. Villegas)", distrital: "Ricardo Masilo", region: "ZONA SCH", formato: "SCH", nombreFormato: "SuperChangoMas" },
+    "1096": { nombre: "Caseros", distrital: "Ariel Konaszczuk", region: "ZONA NORTE", formato: "CH", nombreFormato: "ChangoMas" },
+    "1016": { nombre: "Avellaneda 2", distrital: "Ariel Konaszczuk", region: "ZONA SUR", formato: "HCH", nombreFormato: "HiperChangoMas" },
+    "1027": { nombre: "Mataderos", distrital: "Ariel Konaszczuk", region: "ZONA SCH", formato: "SCH", nombreFormato: "SuperChangoMas" },
+    "3602": { nombre: "Bahía Blanca", distrital: "Sebastian Martinelli", region: "BA Y PAMPA", formato: "HCH", nombreFormato: "HiperChangoMas" },
+    "1002": { nombre: "Rio IV", distrital: "TBD Centro", region: "CENTRO", formato: "HCH", nombreFormato: "HiperChangoMas" },
+    "1003": { nombre: "San Luis", distrital: "Adrian Vinagre", region: "CUYO", formato: "HCH", nombreFormato: "HiperChangoMas" },
+    "1005": { nombre: "Las Heras", distrital: "Adrian Vinagre", region: "CUYO", formato: "HCH", nombreFormato: "HiperChangoMas" },
+    "3605": { nombre: "Córduba Oeste", distrital: "TBD Centro", region: "CENTRO", formato: "HCH", nombreFormato: "HiperChangoMas" },
+    "1036": { nombre: "Moreno Shopping", distrital: "Ricardo Masilo", region: "ZONA SCH", formato: "SCH", nombreFormato: "SuperChangoMas" },
+    "1084": { nombre: "San Vicente", distrital: "Ariel Konaszczuk", region: "ZONA SCH", formato: "SCH", nombreFormato: "SuperChangoMas" },
+    "1075": { nombre: "Salta Fuerza Aérea", distrital: "Luciano Budman", region: "NOA 1", formato: "CH", nombreFormato: "ChangoMas" },
+    "1013": { nombre: "Tigre", distrital: "Ariel Konaszczuk", region: "ZONA NORTE", formato: "CH", nombreFormato: "ChangoMas" },
+    "1038": { nombre: "Cipolletti", distrital: "Rafael Ghirardi", region: "PATAGONIA", formato: "CH", nombreFormato: "ChangoMas" },
+    "1032": { nombre: "Malvinas Arg", distrital: "Ricardo Masilo", region: "ZONA NORTE", formato: "CH", nombreFormato: "ChangoMas" },
+    "1076": { nombre: "Lomas de Zamora", distrital: "Ariel Konaszczuk", region: "ZONA SUR", formato: "CH", nombreFormato: "ChangoMas" },
+    "1068": { nombre: "Palmares (Mza)", distrital: "Adrian Vinagre", region: "CUYO", formato: "HCH", nombreFormato: "HiperChangoMas" },
+    "1092": { nombre: "San Juan Norte", distrital: "Adrian Vinagre", region: "CUYO", formato: "CH", nombreFormato: "ChangoMas" },
+    "1053": { nombre: "Viedma", distrital: "Sebastian Martinelli", region: "BA Y PAMPA", formato: "CH", nombreFormato: "ChangoMas" },
+    "1035": { nombre: "3 de Febrero", distrital: "Ricardo Masilo", region: "ZONA NORTE", formato: "CH", nombreFormato: "ChangoMas" },
+    "1106": { nombre: "Tuc. Ejército Del Norte", distrital: "Luciano Budman", region: "NOA 1", formato: "CH", nombreFormato: "ChangoMas" },
+    "1081": { nombre: "Rawson San Juan", distrital: "Adrian Vinagre", region: "CUYO", formato: "CH", nombreFormato: "ChangoMas" },
+    "3608": { nombre: "Neuquén", distrital: "Rafael Ghirardi", region: "PATAGONIA", formato: "HCH", nombreFormato: "HiperChangoMas" },
+    "4001": { nombre: "Campana", distrital: "Ricardo Masilo", region: "ZONA SCH", formato: "SCH", nombreFormato: "SuperChangoMas" },
+    "1088": { nombre: "Tuc. Concepción", distrital: "Luciano Budman", region: "NOA 1", formato: "CH", nombreFormato: "ChangoMas" },
+    "1006": { nombre: "San Juan", distrital: "Adrian Vinagre", region: "CUYO", formato: "HCH", nombreFormato: "HiperChangoMas" },
+    "2997": { nombre: "Grafa", distrital: "Ariel Konaszczuk", region: "ZONA NORTE", formato: "HCH", nombreFormato: "HiperChangoMas" },
+    "1021": { nombre: "Neuquén 2", distrital: "Rafael Ghirardi", region: "PATAGONIA", formato: "CH", nombreFormato: "ChangoMas" },
+    "1033": { nombre: "Rio Salí", distrital: "Luciano Budman", region: "NOA 1", formato: "CH", nombreFormato: "ChangoMas" },
+    "1022": { nombre: "Bariloche", distrital: "Rafael Ghirardi", region: "PATAGONIA", formato: "CH", nombreFormato: "ChangoMas" },
+    "1082": { nombre: "Tucumán (Av. Jujuy)", distrital: "Luciano Budman", region: "NOA 1", formato: "CH", nombreFormato: "ChangoMas" },
+    "1017": { nombre: "La Tablada", distrital: "Ricardo Masilo", region: "ZONA OESTE", formato: "HCH", nombreFormato: "HiperChangoMas" }
+};
+
+function obtenerMetadataTienda(idTienda) {
+    return METADATA_TIENDAS[idTienda] || { 
+        nombre: `Tienda ${idTienda}`, 
+        distrital: "No asignado", 
+        region: "No asignada", 
+        formato: "CH", 
+        nombreFormato: "ChangoMas" 
+    };
+}
+
 
         let tablaReferencia = new Map();
         let tablaProductosCompleta = new Map();
@@ -789,19 +896,24 @@ let guardadoFirebaseEnProgreso = false;
             });
         }
 
-
+// REEMPLAZA completamente la función guardarEnFirebaseEnSegundoPlano con esta:
 async function guardarEnFirebaseEnSegundoPlano(datosProcesados) {
     if (!firebaseReady) {
         console.log('⚠️ Firebase no disponible, solo guardando localmente');
         return false;
     }
 
+    const idTienda = document.getElementById('select-tienda').value;
+    if (!idTienda) {
+        mostrarEstado("❌ Primero selecciona una tienda", "error");
+        return false;
+    }
 
+    const metadataTienda = obtenerMetadataTienda(idTienda);
     guardadoFirebaseEnProgreso = true;
-
     
     try {
-        console.log('💾 Iniciando guardado en segundo plano en Firebase...');
+        console.log(`💾 Guardando datos para tienda ${idTienda}...`);
         const { db, collection, addDoc, setDoc, doc } = window.firebase;
         
         const fecha = datosProcesados.fecha;
@@ -813,10 +925,17 @@ async function guardarEnFirebaseEnSegundoPlano(datosProcesados) {
             return false;
         }
 
-
-        const fechaDocRef = doc(db, "huecos_gondola", fecha);
+        // NUEVA ESTRUCTURA: huecos_gondola/tienda_id_fecha
+        const fechaDocRef = doc(db, "huecos_gondola", `${idTienda}_${fecha}`);
+        
         await setDoc(fechaDocRef, {
             fecha: fecha,
+            idTienda: idTienda,
+            nombreTienda: metadataTienda.nombre,
+            distrital: metadataTienda.distrital,
+            region: metadataTienda.region,
+            formato: metadataTienda.formato,
+            nombreFormato: metadataTienda.nombreFormato,
             totalItems: datosProcesados.totalItems,
             lineasProcesadas: datosProcesados.lineasProcesadas,
             lineasTotales: datosProcesados.lineasTotales,
@@ -825,17 +944,14 @@ async function guardarEnFirebaseEnSegundoPlano(datosProcesados) {
             timestamp: new Date().toISOString()
         });
 
-
         const productosCollectionRef = collection(fechaDocRef, "productos");
         
-
         const batchSize = 50;
         let productosGuardados = 0;
         
         for (let i = 0; i < productos.length; i += batchSize) {
             const batch = productos.slice(i, i + batchSize);
             
-
             for (const producto of batch) {
                 await addDoc(productosCollectionRef, {
                     sku: producto.sku || '',
@@ -844,6 +960,7 @@ async function guardarEnFirebaseEnSegundoPlano(datosProcesados) {
                     pasillo: producto.pasillo || '',
                     stock: producto.stock || 0,
                     upc: producto.upc || '',
+                    idTienda: idTienda,
                     timestamp: new Date().toISOString()
                 });
                 productosGuardados++;
@@ -851,14 +968,13 @@ async function guardarEnFirebaseEnSegundoPlano(datosProcesados) {
             
             console.log(`✅ Lote ${Math.floor(i/batchSize) + 1} guardado: ${batch.length} productos`);
             
-
             if (productosGuardados % 200 === 0) {
                 mostrarEstado(`⏳ Guardando en la nube... (${productosGuardados}/${productos.length})`, "processing");
             }
         }
 
-        console.log(`✅ Datos guardados en Firebase: ${productos.length} productos`);
-        mostrarEstado(`✅ Datos guardados en la nube: ${productos.length} productos`, "success");
+        console.log(`✅ Datos guardados en Firebase: ${productos.length} productos para tienda ${idTienda}`);
+        mostrarEstado(`✅ Datos guardados en la nube (${metadataTienda.nombre}): ${productos.length} productos`, "success");
         guardadoFirebaseEnProgreso = false;
         return true;
         
@@ -876,58 +992,67 @@ async function guardarEnFirebaseEnSegundoPlano(datosProcesados) {
     }
 }
 
-        async function cargarDesdeFirebase(fecha) {
-            if (!firebaseReady) {
-                console.log('⚠️ Firebase no disponible, cargando desde almacenamiento local');
-                return datosCargados[fecha] || null;
-            }
+       // REEMPLAZA completamente la función cargarDesdeFirebase con esta:
+async function cargarDesdeFirebase(fecha) {
+    if (!firebaseReady) {
+        console.log('⚠️ Firebase no disponible, cargando desde almacenamiento local');
+        return datosCargados[obtenerClaveLocal(fecha)] || null;
+    }
 
-            try {
-                console.log(`📥 Cargando desde Firebase para fecha: ${fecha}`);
-                const { db, collection, getDocs, doc, getDoc } = window.firebase;
-                
-                const fechaDocRef = doc(db, "huecos_gondola", fecha);
-                const fechaDoc = await getDoc(fechaDocRef);
-                
-                if (!fechaDoc.exists()) {
-                    console.log('📭 No hay datos en Firebase para esta fecha');
-                    return null;
-                }
-
-
-                const datosFecha = fechaDoc.data();
-                
-
-                const productosCollectionRef = collection(fechaDocRef, "productos");
-                const productosSnapshot = await getDocs(productosCollectionRef);
-                const productosConInfo = [];
-                
-                productosSnapshot.forEach(doc => {
-                    productosConInfo.push(doc.data());
-                });
-
-
-                const datosCompletos = {
-                    ...datosFecha,
-                    productosConInfo: productosConInfo
-                };
-
-                console.log(`✅ Datos cargados desde Firebase: ${productosConInfo.length} productos`);
-                return datosCompletos;
-                
-            } catch (error) {
-                console.error('❌ Error cargando desde Firebase:', error);
-                
-                if (error.code === 'permission-denied') {
-                    mostrarEstado('❌ Error de permisos al cargar desde Firebase', "error");
-                } else {
-                    mostrarEstado(`❌ Error cargando desde Firebase: ${error.message}`, "error");
-                }
-                
-                return null;
-            }
+    try {
+        const idTienda = document.getElementById('select-tienda').value;
+        if (!idTienda) {
+            mostrarEstado("❌ Primero selecciona una tienda", "error");
+            return null;
         }
 
+        console.log(`📥 Cargando desde Firebase: Tienda ${idTienda}, Fecha ${fecha}`);
+        const { db, collection, getDocs, doc, getDoc } = window.firebase;
+        
+        // NUEVA ESTRUCTURA: huecos_gondola/tienda_id_fecha
+        const fechaDocRef = doc(db, "huecos_gondola", `${idTienda}_${fecha}`);
+        const fechaDoc = await getDoc(fechaDocRef);
+        
+        if (!fechaDoc.exists()) {
+            console.log(`📭 No hay datos para tienda ${idTienda} en fecha ${fecha}`);
+            return null;
+        }
+
+        const datosFecha = fechaDoc.data();
+        
+        const productosCollectionRef = collection(fechaDocRef, "productos");
+        const productosSnapshot = await getDocs(productosCollectionRef);
+        const productosConInfo = [];
+        
+        productosSnapshot.forEach(doc => {
+            productosConInfo.push(doc.data());
+        });
+
+        const datosCompletos = {
+            ...datosFecha,
+            productosConInfo: productosConInfo
+        };
+
+        console.log(`✅ Datos cargados: ${productosConInfo.length} productos para ${obtenerMetadataTienda(idTienda).nombre}`);
+        return datosCompletos;
+        
+    } catch (error) {
+        console.error('❌ Error cargando desde Firebase:', error);
+        
+        if (error.code === 'permission-denied') {
+            mostrarEstado('❌ Error de permisos al cargar desde Firebase', "error");
+        } else {
+            mostrarEstado(`❌ Error cargando desde Firebase: ${error.message}`, "error");
+        }
+        
+        return null;
+    }
+}
+// AGREGA esta función para manejar el almacenamiento local
+function obtenerClaveLocal(fecha) {
+    const idTienda = document.getElementById('select-tienda').value;
+    return idTienda ? `${idTienda}_${fecha}` : fecha;
+}
 
         function obtenerFechaActual() {
             const ahora = new Date();
@@ -1137,22 +1262,31 @@ async function guardarEnFirebaseEnSegundoPlano(datosProcesados) {
                 }
 
 
-                datosCargados[fecha] = {
-                    fecha: fecha,
-                    csv: csvNormalizado,
-                    lineasTotales: lineasDatos.length,
-                    lineasProcesadas: lineasProcesadas,
-                    departamentos: departamentos,
-                    totalItems: totalItems,
-                    productosSinDepartamento: productosSinDepartamento,
-                    productosConInfo: productosConInfo,
-                    timestamp: new Date().toISOString()
-                };
+                const idTienda = document.getElementById('select-tienda').value;
+const metadataTienda = obtenerMetadataTienda(idTienda);
+
+datosCargados[obtenerClaveLocal(fecha)] = {
+    fecha: fecha,
+    idTienda: idTienda,
+    nombreTienda: metadataTienda.nombre,
+    distrital: metadataTienda.distrital,
+    region: metadataTienda.region,
+    formato: metadataTienda.formato,
+    nombreFormato: metadataTienda.nombreFormato,
+    csv: csvNormalizado,
+    lineasTotales: lineasDatos.length,
+    lineasProcesadas: lineasProcesadas,
+    departamentos: departamentos,
+    totalItems: totalItems,
+    productosSinDepartamento: productosSinDepartamento,
+    productosConInfo: productosConInfo,
+    timestamp: new Date().toISOString()
+};
 
 let guardadoEnFirebase = false;
 if (firebaseReady) {
 
-    guardarEnFirebaseEnSegundoPlano(datosCargados[fecha])
+    guardarEnFirebaseEnSegundoPlano(datosCargados[obtenerClaveLocal(fecha)])
         .then(resultado => {
             guardadoEnFirebase = resultado;
             console.log('✅ Guardado en segundo plano completado');
@@ -1221,7 +1355,7 @@ console.log('🛡️ Sistema de prevención de cierre configurado');
                 return;
             }
 
-            let datosFecha = datosCargados[fechaResumen];
+            let datosFecha = datosCargados[obtenerClaveLocal(fechaResumen)];
             
 
             if (!datosFecha) {
@@ -1230,7 +1364,7 @@ console.log('🛡️ Sistema de prevención de cierre configurado');
                 
                 if (datosFecha) {
 
-                    datosCargados[fechaResumen] = datosFecha;
+                    datosCargados[obtenerClaveLocal(fechaResumen)] = datosFecha;
                     mostrarEstado("✅ Datos cargados desde Firebase", "success");
                 } else {
                     mostrarResumenVacio(fechaResumen);
@@ -1449,27 +1583,39 @@ function mostrarNotificacionNavegacion(mensaje, duracion = 8000) {
         }
 
         function actualizarSelectorResumen() {
-            const fechasCargadas = Object.keys(datosCargados);
-            if (fechasCargadas.length > 0) {
-                // Ordenar fechas de más reciente a más antigua
-                fechasCargadas.sort().reverse();
-                const ultimaFecha = fechasCargadas[0];
-                document.getElementById('fecha-resumen').value = ultimaFecha;
-            }
-        }
+    const fechasCargadas = Object.keys(datosCargados);
+    if (fechasCargadas.length > 0) {
+        // Ordenar fechas de más reciente a más antigua
+        fechasCargadas.sort().reverse();
+        const ultimaClave = fechasCargadas[0];
+        
+        // EXTRAER SOLO LA FECHA de la clave
+        const ultimaFecha = ultimaClave.includes('_') 
+            ? ultimaClave.split('_')[1] 
+            : ultimaClave;
+            
+        document.getElementById('fecha-resumen').value = ultimaFecha;
+    }
+}
 
         function actualizarFechaReporte() {
-            const fechasCargadas = Object.keys(datosCargados);
-            if (fechasCargadas.length > 0) {
-                // Ordenar fechas de más reciente a más antigua
-                fechasCargadas.sort().reverse();
-                const ultimaFecha = fechasCargadas[0];
-                document.getElementById('fecha-reporte').value = ultimaFecha;
-                console.log(`📅 Fecha de reporte actualizada a: ${ultimaFecha}`);
-            } else {
-                console.log('ℹ️ No hay fechas cargadas para actualizar el reporte');
-            }
-        }
+    const fechasCargadas = Object.keys(datosCargados);
+    if (fechasCargadas.length > 0) {
+        // Ordenar fechas de más reciente a más antigua
+        fechasCargadas.sort().reverse();
+        const ultimaClave = fechasCargadas[0];
+        
+        // EXTRAER SOLO LA FECHA de la clave (ej: "1092_2025-11-30" → "2025-11-30")
+        const ultimaFecha = ultimaClave.includes('_') 
+            ? ultimaClave.split('_')[1] 
+            : ultimaClave;
+            
+        document.getElementById('fecha-reporte').value = ultimaFecha;
+        console.log(`📅 Fecha de reporte actualizada a: ${ultimaFecha}`);
+    } else {
+        console.log('ℹ️ No hay fechas cargadas para actualizar el reporte');
+    }
+}
 
         async function cargarYMostrarDesdeFirebase() {
             const fechaResumen = document.getElementById('fecha-resumen').value;
@@ -1485,7 +1631,7 @@ function mostrarNotificacionNavegacion(mensaje, duracion = 8000) {
             
             if (datos) {
                 // Guardar en datos locales
-                datosCargados[fechaResumen] = datos;
+                datosCargados[obtenerClaveLocal(fechaResumen)] = datos;
                 mostrarResumenDepartamentos(datos);
                 mostrarEstado("✅ Datos cargados desde Firebase", "success");
             } else {
@@ -1509,7 +1655,7 @@ function mostrarNotificacionNavegacion(mensaje, duracion = 8000) {
             
             if (datos) {
                 // Guardar en datos locales
-                datosCargados[fecha] = datos;
+                datosCargados[obtenerClaveLocal(fecha)] = datos;
                 document.getElementById('estado-historico').innerHTML = 
                     `<div class="success">
                         ✅ Datos cargados: ${datos.totalItems} productos<br>
@@ -1524,24 +1670,23 @@ function mostrarNotificacionNavegacion(mensaje, duracion = 8000) {
         }
 
         async function generarReportePDF() {
-            const fechaReporteInput = document.getElementById('fecha-reporte').value;
-            
-            if (!fechaReporteInput) {
-                mostrarEstado("❌ Selecciona una fecha para el reporte", "error");
-                return;
-            }
+    const fechaReporteInput = document.getElementById('fecha-reporte').value;
+    
+    if (!fechaReporteInput) {
+        mostrarEstado("❌ Selecciona una fecha para el reporte", "error");
+        return;
+    }
 
-            // Convertir fecha de YYYY-MM-DD a DD-MM-YYYY para el PDF
-            const fechaReportePDF = formatoFechaDDMMYYYY(fechaReporteInput);
+    // PRIMERO obtener los datos
+    const datosFecha = datosCargados[obtenerClaveLocal(fechaReporteInput)];
+    
+    if (!datosFecha || !datosFecha.productosConInfo) {
+        mostrarEstado("❌ No hay datos cargados para esta fecha", "error");
+        return;
+    }
 
-            // Buscar datos para la fecha del reporte
-            const datosFecha = datosCargados[fechaReporteInput];
-            
-            if (!datosFecha || !datosFecha.productosConInfo) {
-                mostrarEstado("❌ No hay datos cargados para esta fecha", "error");
-                return;
-            }
-
+    // LUEGO obtener la fecha real de los datos
+    const fechaRealPDF = formatoFechaDDMMYYYY(datosFecha.fecha);
             try {
                 const progreso = document.getElementById('progreso-reporte');
                 const resultado = document.getElementById('resultado-reporte');
@@ -1591,7 +1736,7 @@ function mostrarNotificacionNavegacion(mensaje, duracion = 8000) {
 
                     doc.setFontSize(10);
                     doc.setFont(undefined, 'bold');
-                    doc.text(`Reporte de Huecos en Góndola del ${fechaReportePDF}`, marginLeft, currentY);
+                   doc.text(`Reporte de Huecos en Góndola del ${fechaRealPDF}`, marginLeft, currentY);
                     currentY += 5;
 
 
