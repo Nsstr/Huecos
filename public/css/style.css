@@ -275,6 +275,22 @@ textarea {
     min-height: 200px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 0.8125rem;
+    resize: vertical;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+}
+
+textarea::-webkit-scrollbar {
+    width: 6px;
+}
+
+textarea::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+textarea::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border-radius: 20px;
 }
 
 button:not(.nav-btn) {

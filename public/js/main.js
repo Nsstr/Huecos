@@ -97,7 +97,6 @@ class App {
                     return;
                 }
                 this.ui.showSection(id);
-                if (id === 'resumen') this.refreshResumen();
                 if (id === 'historico') this.handleRefreshHistory();
             });
         });
@@ -279,6 +278,7 @@ class App {
             try {
                 this.ui.showNotification('Limpiando historial...', 'processing');
                 await this.firebase.clearHistoricalData();
+                this.data.clearLocalData(); // Clear memory
                 this.ui.showNotification('Historial reiniciado ✨');
                 this.handleRefreshHistory();
                 this.refreshResumen();

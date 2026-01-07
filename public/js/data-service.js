@@ -6,6 +6,10 @@ export class DataService {
         this.datosLocales = new Map(); // key -> data
     }
 
+    clearLocalData() {
+        this.datosLocales.clear();
+    }
+
     async cargarTablaReferencia(url = './data.csv') {
         try {
             const response = await fetch(url);
