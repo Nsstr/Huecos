@@ -41,6 +41,7 @@
                         <button id="btn-cargar" class="menu-item active">📤 Cargar Datos</button>
                         <button id="btn-resumen" class="menu-item">📊 Vista Resumen</button>
                         <button id="btn-completar" class="menu-item">🔍 Completar Información</button>
+                        <button id="btn-ajustar" class="menu-item">🛠️ Ajustar Pasillo</button>
                         <button id="btn-reporte" class="menu-item">📄 Generar Reporte</button>
                         <button id="btn-historico" class="menu-item">🕒 Historial de Reportes</button>
                         <button id="btn-metricas" class="menu-item">📈 Métricas y Análisis</button>
@@ -104,6 +105,70 @@
                 <div id="completar-contenido" class="completar-grid">
                     <!-- Populated by JS -->
                     <div style="text-align:center; padding:3rem; color:#64748b;">No hay productos pendientes.</div>
+                </div>
+            </section>
+
+            <!-- Section: Ajustar Pasillo -->
+            <section id="seccion-ajustar">
+                <h2>🛠️ Ajustar Información de Producto</h2>
+                <p style="color: var(--text-muted); margin-bottom: 2rem;">
+                    Busca un SKU o UPC para corregir sus datos (Pasillo, Departamento, Descripción) de forma permanente.
+                </p>
+
+                <div class="card"
+                    style="padding: 1.5rem; background: white; border-radius: 12px; border: 1px solid var(--border); box-shadow: var(--shadow);">
+                    <div style="display: flex; gap: 0.75rem; margin-bottom: 2rem;">
+                        <input type="text" id="input-busqueda-ajuste" placeholder="Ingresa SKU o UPC..."
+                            style="flex: 1; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem;">
+                        <button id="btn-buscar-ajuste" class="btn btn-primary"
+                            style="width: auto; padding: 0 1.5rem;">Buscar</button>
+                    </div>
+
+                    <div id="detalle-ajuste"
+                        style="display: none; border-top: 1px solid var(--border); padding-top: 1.5rem;">
+                        <div class="form-group" style="margin-bottom: 1.25rem;">
+                            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Descripción:</label>
+                            <input type="text" id="ajuste-descripcion"
+                                style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                            <div class="form-group">
+                                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Pasillo:</label>
+                                <select id="ajuste-pasillo"
+                                    style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
+                                    <!-- Populated by JS -->
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Depto
+                                    ID:</label>
+                                <input type="text" id="ajuste-depto"
+                                    style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 1.5rem;">
+                            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Clase / Categoría
+                                (Opcional):</label>
+                            <input type="text" id="ajuste-clase"
+                                style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
+                        </div>
+
+                        <input type="hidden" id="ajuste-sku">
+                        <input type="hidden" id="ajuste-upc">
+
+                        <button id="btn-guardar-ajuste" class="btn btn-primary"
+                            style="width: 100%; padding: 1rem; font-weight: 700; font-size: 1rem;">
+                            💾 Guardar Cambios Permanentes
+                        </button>
+                    </div>
+
+                    <div id="resultado-vacio-ajuste"
+                        style="display: none; text-align: center; padding: 2rem; color: var(--text-muted);">
+                        <span style="font-size: 2rem; display: block; margin-bottom: 1rem;">🔎</span>
+                        No se encontró ningún producto con ese código.
+                    </div>
                 </div>
             </section>
 
@@ -182,6 +247,35 @@
                     </button>
                     <button id="btn-modal-completar" class="btn btn-secondary" style="width: 100%; display: none;">
                         🔍 Completar Productos Desconocidos
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Confirmation Modal -->
+    <div id="bulk-confirmation-modal" class="pdf-modal">
+        <div class="pdf-modal-content" style="max-width: 600px;">
+            <div class="pdf-modal-header">
+                <h3>Asignación Inteligente de Pasillos</h3>
+                <button id="btn-close-bulk" class="btn-close">✕</button>
+            </div>
+            <div class="pdf-modal-body" style="padding: 1.5rem;">
+                <p style="color: var(--text-muted); margin-bottom: 1rem; font-size: 0.875rem;">
+                    Basado en productos similares, he sugerido los siguientes pasillos para los productos nuevos del
+                    reporte:
+                </p>
+                <div id="bulk-suggestions-list"
+                    style="display: flex; flex-direction: column; gap: 1rem; max-height: 400px; overflow-y: auto;">
+                    <!-- Populated by JS -->
+                </div>
+                <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+                    <button id="btn-confirm-bulk" class="btn btn-primary"
+                        style="flex: 2; padding: 1rem; font-weight: 700;">
+                        ✅ Confirmar Sugerencias
+                    </button>
+                    <button id="btn-cancel-bulk" class="btn btn-secondary" style="flex: 1;">
+                        Omitir
                     </button>
                 </div>
             </div>

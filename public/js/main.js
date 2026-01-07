@@ -1,18 +1,9 @@
-import { METADATA_TIENDAS } from './constants.js';
+import { firebaseConfig } from './config.js';
 import { FirebaseService } from './firebase-service.js';
 import { DataService } from './data-service.js';
 import { PdfService } from './pdf-service.js';
 import { UiManager } from './ui-manager.js';
-
-const firebaseConfig = {
-    apiKey: "AIzaSyBvL_rQFZf8427SuBG8Ua_7YNlNY9kclZ4",
-    authDomain: "huecos-96c8c.firebaseapp.com",
-    projectId: "huecos-96c8c",
-    storageBucket: "huecos-96c8c.firebasestorage.app",
-    messagingSenderId: "545038530680",
-    appId: "1:545038530680:web:8a3bfdc4334a0ea0b4d58d",
-    measurementId: "G-0YDTR33E5S"
-};
+import { METADATA_TIENDAS } from './constants.js';
 
 class App {
     constructor() {
@@ -114,6 +105,13 @@ class App {
         // Historial listeners
         document.getElementById('btn-actualizar-historial').addEventListener('click', () => this.handleRefreshHistory());
 
+        // Ajustar Pasillo listeners
+        document.getElementById('btn-buscar-ajuste').addEventListener('click', () => this.handleSearchAjuste());
+        document.getElementById('btn-guardar-ajuste').addEventListener('click', () => this.handleSaveAjuste());
+        document.getElementById('input-busqueda-ajuste').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.handleSearchAjuste();
+        });
+
         // Process Data
         document.getElementById('btn-cargar-datos').addEventListener('click', async () => {
             const textarea = document.getElementById('texto-csv');
@@ -130,15 +128,12 @@ class App {
                 this.ui.showNotification('Procesando datos...', 'processing');
                 const result = this.data.procesarCSV(text, fecha, idTienda, METADATA_TIENDAS[idTienda]);
 
-                // Store for re-processing if reference data changes
                 this.lastProcessedText = text;
                 sessionStorage.setItem('last_huecos_text', text);
 
-                // Clear textarea
                 textarea.value = '';
                 document.getElementById('contador-lineas').textContent = '';
 
-                // Handle unknown products
                 if (result.productosSinDepartamento.length > 0) {
                     this.ui.showNotification(`Atención: ${result.productosSinDepartamento.length} productos desconocidos`, 'warning');
                     this.ui.updateUnknownProducts(
@@ -150,19 +145,14 @@ class App {
 
                 this.ui.showNotification(`Procesado: ${result.lineasProcesadas} items`, 'success');
 
-                // Show Summary Modal automatically
                 this.ui.showSummaryModal(result, () => {
-                    // Trigger PDF generation if user clicks the button
                     document.getElementById('fecha-reporte').value = fecha;
                     document.getElementById('pasillo-reporte').value = '';
                     document.getElementById('btn-generar-pdf').click();
                 });
 
-                // Update Notification Badge
-                const hasUnknown = result.productosSinDepartamento && result.productosSinDepartamento.length > 0;
-                this.ui.updateBadge(hasUnknown);
+                this.ui.updateBadge(result.productosSinDepartamento.length > 0);
 
-                // Background save
                 if (this.firebase.ready) {
                     this.firebase.saveReport(result)
                         .then(() => this.ui.showNotification('Guardado en la nube ✅'))
@@ -225,59 +215,65 @@ class App {
             try {
                 this.ui.showNotification('Importando reporte stock...', 'processing');
                 const text = await file.text();
-                const nuevos = this.data.procesarReporteStock(text);
+                const { productos, suggestions } = this.data.procesarReporteStock(text);
 
-                if (nuevos.length > 0) {
-                    this.ui.showNotification(`${nuevos.length} productos nuevos encontrados`, 'success');
-
-                    // Save all to Firebase
-                    for (const prod of nuevos) {
+                const finalizedSave = async (listToSave) => {
+                    this.ui.showNotification(`Guardando ${listToSave.length} productos...`, 'processing');
+                    for (const prod of listToSave) {
                         await this.firebase.saveCustomProductInfo(prod);
                     }
 
-                    // Update current report view if necessary
                     const fecha = document.getElementById('fecha').value;
                     const idTienda = document.getElementById('select-tienda').value;
                     const report = this.data.getReportLocal(idTienda, fecha);
-                    if (report) {
-                        // Re-process current report to apply new info
+
+                    if (report && this.lastProcessedText) {
                         const reprocessed = this.data.procesarCSV(
-                            this.lastProcessedText || '',
+                            this.lastProcessedText,
                             fecha, idTienda, METADATA_TIENDAS[idTienda]
                         );
-
-                        // Save re-processed report to Firebase so it's persisted
-                        if (this.firebase.ready) {
-                            await this.firebase.saveReport(reprocessed);
-                        }
+                        if (this.firebase.ready) await this.firebase.saveReport(reprocessed);
 
                         this.ui.updateUnknownProducts(
                             reprocessed.productosSinDepartamento,
                             (data, div) => this.handleSaveCustomProduct(data, div),
                             this.data.getListaPasillos()
                         );
-                        // Refresh Resumen view
-                        this.refreshResumen();
+                        this.ui.updateBadge(reprocessed.productosSinDepartamento.length > 0);
                     }
+
+                    this.ui.showNotification('Sincronización completa ✅', 'success');
+                    this.refreshResumen();
+                    if (this.firebase.ready) await this.firebase.saveStockReportRaw(text);
+                };
+
+                if (suggestions.length > 0) {
+                    this.ui.showBulkConfirmationModal(suggestions, async (confirmed) => {
+                        confirmed.forEach(cluster => {
+                            cluster.products.forEach(p => {
+                                p.pasillo = cluster.aisle;
+                                this.data.addReferenciaPersonalizada(p);
+                            });
+                        });
+                        await finalizedSave(productos);
+                    });
+                } else if (productos.length > 0) {
+                    await finalizedSave(productos);
                 } else {
-                    this.ui.showNotification('No se encontraron productos nuevos en este reporte', 'warning');
+                    this.ui.showNotification('No se encontraron productos nuevos.', 'info');
                 }
 
-                // Save raw text to Firebase for recovery
-                if (this.firebase.ready) {
-                    await this.firebase.saveStockReportRaw(text);
-                }
             } catch (error) {
                 console.error(error);
                 this.ui.showNotification('Error al importar reporte stock', 'error');
             } finally {
-                e.target.value = ''; // Reset input
+                e.target.value = '';
             }
         });
 
-        // Danger Zone: Reset History
+        // Reset History
         document.getElementById('btn-danger-reset')?.addEventListener('click', async () => {
-            const confirmed = confirm("⚠️ ¿Quieres borrar el historial de reportes? (La información aprendida de productos se mantendrá intacta).");
+            const confirmed = confirm("⚠️ ¿Borrar historial de reportes? (Los productos aprendidos se mantienen).");
             if (!confirmed) return;
 
             try {
@@ -348,11 +344,7 @@ class App {
     }
 
     async handleRefreshHistory() {
-        if (!this.firebase.ready) {
-            this.ui.showNotification('Firebase no está conectado', 'error');
-            return;
-        }
-
+        if (!this.firebase.ready) return;
         try {
             this.ui.showNotification('Cargando historial...', 'processing');
             const idTienda = document.getElementById('select-tienda').value;
@@ -361,7 +353,7 @@ class App {
             this.ui.showNotification('Historial actualizado');
         } catch (error) {
             console.error(error);
-            this.ui.showNotification('Error al cargar historial: ' + error.message, 'error');
+            this.ui.showNotification('Error al cargar historial', 'error');
         }
     }
 
@@ -371,18 +363,94 @@ class App {
             const report = await this.firebase.loadReport(idTienda, fecha);
             if (report) {
                 this.data.setReportLocal(idTienda, fecha, report);
-
-                // Update UI dates to match the loaded report
                 document.getElementById('fecha-resumen').value = fecha;
                 document.getElementById('fecha-reporte').value = fecha;
-
                 this.ui.showSection('resumen');
                 this.refreshResumen();
                 this.ui.showNotification(`Reporte del ${fecha} cargado`);
             }
         } catch (error) {
             console.error(error);
-            this.ui.showNotification('Error al cargar reporte: ' + error.message, 'error');
+            this.ui.showNotification('Error al cargar reporte', 'error');
+        }
+    }
+
+    handleSearchAjuste() {
+        const query = document.getElementById('input-busqueda-ajuste').value;
+        if (!query) {
+            this.ui.showNotification('Ingresa un código para buscar', 'warning');
+            return;
+        }
+
+        const product = this.data.buscarProducto(query);
+        const detalleDiv = document.getElementById('detalle-ajuste');
+        const vacioDiv = document.getElementById('resultado-vacio-ajuste');
+
+        if (product) {
+            detalleDiv.style.display = 'block';
+            vacioDiv.style.display = 'none';
+
+            // Populate Pasillo Select
+            const selectPasillo = document.getElementById('ajuste-pasillo');
+            let pasillos = this.data.getListaPasillos();
+
+            // If product has a CURRENT aisle not in the list, add it
+            if (product.pasillo && !pasillos.includes(product.pasillo)) {
+                pasillos.push(product.pasillo);
+                pasillos.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+            }
+
+            selectPasillo.innerHTML = '<option value="">-- Seleccionar --</option>';
+            pasillos.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p;
+                opt.textContent = p;
+                selectPasillo.appendChild(opt);
+            });
+
+            document.getElementById('ajuste-descripcion').value = product.descripcion || '';
+            document.getElementById('ajuste-pasillo').value = product.pasillo || '';
+            document.getElementById('ajuste-depto').value = product.deptId || '';
+            document.getElementById('ajuste-clase').value = product.clase || '';
+            document.getElementById('ajuste-sku').value = product.sku || '';
+            document.getElementById('ajuste-upc').value = product.upc || '';
+        } else {
+            detalleDiv.style.display = 'none';
+            vacioDiv.style.display = 'block';
+        }
+    }
+
+    async handleSaveAjuste() {
+        const sku = document.getElementById('ajuste-sku').value;
+        const upc = document.getElementById('ajuste-upc').value;
+        const descripcion = document.getElementById('ajuste-descripcion').value;
+        const pasillo = document.getElementById('ajuste-pasillo').value;
+        const deptId = document.getElementById('ajuste-depto').value;
+        const clase = document.getElementById('ajuste-clase').value;
+
+        if (!sku || !descripcion || !pasillo || !deptId) {
+            this.ui.showNotification('Completa todos los campos obligatorios', 'error');
+            return;
+        }
+
+        const info = { sku, upc, descripcion, pasillo, deptId, clase };
+
+        try {
+            this.ui.showNotification('Guardando cambios permanentes...', 'processing');
+            const ok = await this.firebase.saveCustomProductInfo(info);
+            if (ok) {
+                this.data.addReferenciaPersonalizada(info);
+                this.ui.showNotification('Producto actualizado perpetuamente ✅');
+
+                // Clear and hide
+                document.getElementById('input-busqueda-ajuste').value = '';
+                document.getElementById('detalle-ajuste').style.display = 'none';
+            } else {
+                throw new Error("No se pudo guardar en Firebase");
+            }
+        } catch (error) {
+            console.error(error);
+            this.ui.showNotification('Error al guardar: ' + error.message, 'error');
         }
     }
 }

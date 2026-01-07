@@ -340,4 +340,49 @@ export class UiManager {
 
         openModal();
     }
+
+    showBulkConfirmationModal(suggestions, onConfirm) {
+        const modal = document.getElementById('bulk-confirmation-modal');
+        const list = document.getElementById('bulk-suggestions-list');
+        const btnConfirm = document.getElementById('btn-confirm-bulk');
+        const btnCancel = document.getElementById('btn-cancel-bulk');
+        const btnClose = document.getElementById('btn-close-bulk');
+
+        if (!modal || !list) return;
+
+        list.innerHTML = suggestions.map(cluster => `
+            <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <strong style="color: var(--primary);">Pasillo Sugerido: ${cluster.aisle}</strong>
+                    <span class="status-badge" style="background: #dbeafe; color: #1e40af; font-size: 0.75rem;">
+                        ${cluster.products.length} productos
+                    </span>
+                </div>
+                <div style="font-size: 0.8125rem; color: var(--text-muted); line-height: 1.4;">
+                    ${cluster.products.slice(0, 3).map(p => p.descripcion).join(', ')}
+                    ${cluster.products.length > 3 ? '...' : ''}
+                </div>
+            </div>
+        `).join('');
+
+        const openModal = () => {
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('active'), 10);
+        };
+
+        const closeModal = () => {
+            modal.classList.remove('active');
+            setTimeout(() => modal.style.display = 'none', 300);
+        };
+
+        btnConfirm.onclick = () => {
+            closeModal();
+            onConfirm(suggestions);
+        };
+
+        btnCancel.onclick = closeModal;
+        btnClose.onclick = closeModal;
+
+        openModal();
+    }
 }

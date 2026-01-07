@@ -21,7 +21,7 @@ export class DataService {
                     const sku = this._normalizeCode(partes[0]);
                     const upc = this._normalizeCode(partes[5]);
                     const deptId = partes[2];
-                    const pasillo = partes[3];
+                    const pasillo = this._normalizeAisle(partes[3]);
                     const descripcion = partes[4].replace(/"/g, '');
 
                     if (sku && deptId) {
@@ -85,6 +85,17 @@ export class DataService {
         return h.toString().toUpperCase()
             .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove accents
             .replace(/[^A-Z0-9]/g, '').trim();
+    }
+
+    _normalizeAisle(aisle) {
+        if (!aisle) return 'S/D';
+        let val = aisle.toString().trim().toUpperCase();
+
+        // Regla específica para corregir variaciones detectadas por el usuario
+        if (val === 'HARINAS Y ACEITES') return 'HARINAS Y ACEITE';
+        if (val === 'SIN PASILLO' || val === 'S/P' || val === 'S/D') return 'S/D';
+
+        return val;
     }
 
     procesarCSV(texto, fecha, idTienda, metadataTienda) {
@@ -172,19 +183,73 @@ export class DataService {
             this.tablaReferencia.set(normalizedSku, {
                 descripcion: datos.descripcion,
                 deptId: datos.deptId,
-                pasillo: datos.pasillo,
+                pasillo: this._normalizeAisle(datos.pasillo),
                 upc: this._normalizeCode(datos.upc),
                 clase: datos.clase || ''
             });
         }
     }
 
+    buscarProducto(codigo) {
+        const normalized = this._normalizeCode(codigo);
+        if (!normalized) return null;
+
+        // Try direct SKU match
+        if (this.tablaReferencia.has(normalized)) {
+            return { sku: normalized, ...this.tablaReferencia.get(normalized) };
+        }
+
+        // Try UPC search (less efficient but necessary)
+        let found = null;
+        for (const [sku, info] of this.tablaReferencia.entries()) {
+            if (info.upc === normalized || info.upc.endsWith(normalized)) {
+                found = { sku, ...info };
+                break;
+            }
+        }
+        return found;
+    }
+
     getReportLocal(idTienda, fecha) {
         return this.datosLocales.get(`${idTienda}_${fecha}`);
     }
 
-    setReportLocal(idTienda, fecha, data) {
-        this.datosLocales.set(`${idTienda}_${fecha}`, data);
+    // Learns keywords from existing names and maps them to aisles
+    _buildKeywordAisleMap() {
+        const keywordStats = new Map(); // keyword -> Map(pasillo -> count)
+
+        this.tablaReferencia.forEach(info => {
+            if (!info.pasillo || info.pasillo === 'S/D') return;
+
+            // Extract tokens from description (long words, no numbers)
+            const tokens = info.descripcion.toUpperCase().split(/[^A-Z]/)
+                .filter(t => t.length > 3);
+
+            tokens.forEach(token => {
+                if (!keywordStats.has(token)) keywordStats.set(token, new Map());
+                const counts = keywordStats.get(token);
+                counts.set(info.pasillo, (counts.get(info.pasillo) || 0) + 1);
+            });
+        });
+
+        const result = new Map();
+        keywordStats.forEach((counts, token) => {
+            let total = 0;
+            let bestPasillo = '';
+            let maxCount = 0;
+            counts.forEach((count, pasillo) => {
+                total += count;
+                if (count > maxCount) {
+                    maxCount = count;
+                    bestPasillo = pasillo;
+                }
+            });
+            // Only suggest if one aisle is dominant (>80%) and has enough samples
+            if (maxCount / total > 0.8 && total >= 2) {
+                result.set(token, bestPasillo);
+            }
+        });
+        return result;
     }
 
     // Maps (deptId + category) -> Pasillo (most frequent)
@@ -335,6 +400,39 @@ export class DataService {
         }
 
         console.log(`[Import] Finished. New/Updated: ${nuevosProductos.length}. Total Ref Size: ${this.tablaReferencia.size}`);
-        return nuevosProductos;
+
+        // Group suggestions for bulk confirmation
+        const suggestions = this._generateSuggestions(nuevosProductos);
+
+        return {
+            productos: nuevosProductos,
+            suggestions: suggestions
+        };
+    }
+
+    _generateSuggestions(nuevos) {
+        const keywordMap = this._buildKeywordAisleMap();
+        const clusters = new Map(); // aisle -> { products: [], keywords: [] }
+
+        nuevos.forEach(p => {
+            if (p.pasillo !== 'S/D') return;
+
+            const tokens = p.descripcion.toUpperCase().split(/[^A-Z]/).filter(t => t.length > 3);
+            let suggestedAisle = null;
+
+            for (const t of tokens) {
+                if (keywordMap.has(t)) {
+                    suggestedAisle = keywordMap.get(t);
+                    break;
+                }
+            }
+
+            if (suggestedAisle) {
+                if (!clusters.has(suggestedAisle)) clusters.set(suggestedAisle, { aisle: suggestedAisle, products: [] });
+                clusters.get(suggestedAisle).products.push(p);
+            }
+        });
+
+        return Array.from(clusters.values());
     }
 }
