@@ -276,21 +276,24 @@ textarea {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 0.8125rem;
     resize: vertical;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border) transparent;
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE/Edge */
 }
 
 textarea::-webkit-scrollbar {
-    width: 6px;
+    display: none;
+    /* Chrome/Safari */
 }
 
-textarea::-webkit-scrollbar-track {
-    background: transparent;
+/* Ocultar barra de scroll global si es necesario */
+body::-webkit-scrollbar {
+    display: none;
 }
 
-textarea::-webkit-scrollbar-thumb {
-    background-color: var(--border);
-    border-radius: 20px;
+body {
+    scrollbar-width: none;
 }
 
 button:not(.nav-btn) {
