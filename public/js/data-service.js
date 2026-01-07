@@ -218,6 +218,10 @@ export class DataService {
         return this.datosLocales.get(`${idTienda}_${fecha}`);
     }
 
+    setReportLocal(idTienda, fecha, data) {
+        this.datosLocales.set(`${idTienda}_${fecha}`, data);
+    }
+
     // Learns keywords from existing names and maps them to aisles
     _buildKeywordAisleMap() {
         const keywordStats = new Map(); // keyword -> Map(pasillo -> count)
