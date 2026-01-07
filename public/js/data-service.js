@@ -25,11 +25,13 @@ export class DataService {
                     const descripcion = partes[4].replace(/"/g, '');
 
                     if (sku && deptId) {
+                        const clase = partes[1] || '';
                         this.tablaReferencia.set(sku, {
                             descripcion,
                             deptId,
                             pasillo,
-                            upc
+                            upc,
+                            clase
                         });
                     }
                 }
@@ -171,7 +173,8 @@ export class DataService {
                 descripcion: datos.descripcion,
                 deptId: datos.deptId,
                 pasillo: datos.pasillo,
-                upc: this._normalizeCode(datos.upc)
+                upc: this._normalizeCode(datos.upc),
+                clase: datos.clase || ''
             });
         }
     }
@@ -182,6 +185,35 @@ export class DataService {
 
     setReportLocal(idTienda, fecha, data) {
         this.datosLocales.set(`${idTienda}_${fecha}`, data);
+    }
+
+    // Maps (deptId + category) -> Pasillo (most frequent)
+    getCategoryMapping() {
+        const freqMap = new Map(); // "deptId|category" -> Map(pasillo -> count)
+        const result = new Map();
+
+        this.tablaReferencia.forEach(info => {
+            if (info.deptId && info.clase && info.pasillo && info.pasillo !== 'S/D' && info.pasillo !== 'SIN PASILLO') {
+                const key = `${info.deptId}|${info.clase.toUpperCase()}`;
+                if (!freqMap.has(key)) freqMap.set(key, new Map());
+                const counts = freqMap.get(key);
+                counts.set(info.pasillo, (counts.get(info.pasillo) || 0) + 1);
+            }
+        });
+
+        freqMap.forEach((counts, key) => {
+            let maxCount = 0;
+            let bestPasillo = '';
+            counts.forEach((count, pasillo) => {
+                if (count > maxCount) {
+                    maxCount = count;
+                    bestPasillo = pasillo;
+                }
+            });
+            result.set(key, bestPasillo);
+        });
+
+        return result;
     }
 
     getDeptToPasilloMap() {
@@ -218,6 +250,7 @@ export class DataService {
         const lineasRaw = cleanText.split('\n').map(l => l.trim()).filter(l => l !== '');
 
         const deptToPasillo = this.getDeptToPasilloMap();
+        const categoryMap = this.getCategoryMapping();
         const nuevosProductos = [];
 
         // Advanced delimiter detection
@@ -226,14 +259,15 @@ export class DataService {
 
         console.log(`[Import] Delimiter: "${del}"`);
 
-        let colIndex = { dept: -1, upc: -1, sku: -1, desc: -1 };
+        let colIndex = { dept: -1, upc: -1, sku: -1, desc: -1, cat: -1 };
         let startIndex = 0;
 
         const synonyms = {
             sku: ['SKU', 'ITEM', 'CODIGO', 'ARTICULO', 'ID', 'MATERIAL', 'PROD'],
             upc: ['UPC', 'EAN', 'BARCODE', 'CODIGODEBARRAS', 'BARRAS', 'EAN13', 'EAN8'],
-            dept: ['DEPARTAMENTO', 'DEPTO', 'CATEGORIA', 'SECCION', 'DIVISION', 'GERENCIA'],
-            desc: ['DESCRIPCION', 'NOMBRE', 'PRODUCTO', 'DETAIL']
+            dept: ['DEPARTAMENTO', 'DEPTO', 'DIVISION', 'GERENCIA'],
+            desc: ['DESCRIPCION', 'NOMBRE', 'PRODUCTO', 'DETAIL'],
+            cat: ['CLASE', 'CATEGORIA', 'SECCION', 'RUBRO', 'FAMILIA']
         };
 
         for (let i = 0; i < Math.min(30, lineasRaw.length); i++) {
@@ -243,6 +277,7 @@ export class DataService {
             synonyms.upc.forEach(s => { if (colIndex.upc === -1) colIndex.upc = innerPartes.indexOf(s); });
             synonyms.dept.forEach(s => { if (colIndex.dept === -1) colIndex.dept = innerPartes.indexOf(s); });
             synonyms.desc.forEach(s => { if (colIndex.desc === -1) colIndex.desc = innerPartes.indexOf(s); });
+            synonyms.cat.forEach(s => { if (colIndex.cat === -1) colIndex.cat = innerPartes.indexOf(s); });
 
             if (colIndex.sku !== -1 || colIndex.upc !== -1) {
                 startIndex = i + 1;
@@ -252,10 +287,11 @@ export class DataService {
         }
 
         // Hard fallbacks for the user's specific format if not detected
-        if (colIndex.sku === -1) colIndex.sku = 3;
-        if (colIndex.upc === -1) colIndex.upc = 2;
-        if (colIndex.dept === -1) colIndex.dept = 0;
+        if (colIndex.sku === -1) colIndex.sku = 0;
+        if (colIndex.cat === -1) colIndex.cat = 1;
+        if (colIndex.dept === -1) colIndex.dept = 2;
         if (colIndex.desc === -1) colIndex.desc = 4;
+        if (colIndex.upc === -1) colIndex.upc = 5;
 
         console.log("[Import] Calculated Mapping:", colIndex);
 
@@ -274,15 +310,21 @@ export class DataService {
 
                 // If not in reference OR exists but is incomplete, update it!
                 if (!existing || existing.deptId === 'SIN_INFO' || existing.descripcion === 'PRODUCTO DESCONOCIDO') {
-                    const deptParts = rawDept.replace(/"/g, '').split('-');
+                    const deptParts = (partes[colIndex.dept] || '').replace(/"/g, '').split('-');
                     const deptId = deptParts[0].trim();
-                    const pasillo = deptToPasillo.get(deptId) || (existing ? existing.pasillo : 'S/D');
+                    const rawCat = (partes[colIndex.cat] || '').replace(/"/g, '').trim().toUpperCase();
+
+                    // Logic: 1. Granular mapping (Dept + Category) 2. General mapping (Dept) 3. Existing 4. S/D
+                    let pasillo = categoryMap.get(`${deptId}|${rawCat}`) ||
+                        deptToPasillo.get(deptId) ||
+                        (existing ? existing.pasillo : 'S/D');
 
                     const info = {
                         sku,
                         upc,
                         deptId: deptId || 'SIN_DEPT',
                         pasillo,
+                        clase: rawCat,
                         descripcion: rawDesc.replace(/"/g, '').trim() || deptParts.slice(1).join('-').trim() || 'PRODUCTO IMPORTADO'
                     };
 
