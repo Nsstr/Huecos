@@ -29,12 +29,24 @@ export class PdfService {
                 grouped[pasillo].push(p);
             });
 
-            const marginLeft = 5;
-            const marginTop = 10;
+            const margin = 10; // 1cm margin
+            const marginLeft = margin;
+            const marginTop = margin;
+            const marginRight = margin;
             const pageWidth = doc.internal.pageSize.getWidth();
-            const usableWidth = pageWidth - 10;
+            const usableWidth = pageWidth - (marginLeft + marginRight);
 
-            const pasillos = Object.keys(grouped).sort();
+            const pasillos = Object.keys(grouped).sort((a, b) => {
+                const isSD_A = a === 'S/D' || a === 'SIN PASILLO';
+                const isSD_B = b === 'S/D' || b === 'SIN PASILLO';
+                if (isSD_A && !isSD_B) return 1;
+                if (!isSD_A && isSD_B) return -1;
+
+                const numA = parseInt(a);
+                const numB = parseInt(b);
+                if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+                return a.localeCompare(b);
+            });
 
             for (let i = 0; i < pasillos.length; i++) {
                 if (i > 0) doc.addPage();
@@ -44,20 +56,23 @@ export class PdfService {
 
                 doc.setFontSize(10);
                 doc.setFont(undefined, 'bold');
-                doc.text(`Reporte de Huecos en Góndola - ${reportData.nombreTienda} - ${reportData.fecha}`, marginLeft, currentY);
+                const nombreTienda = reportData.nombre || reportData.nombreTienda || 'Tienda';
+                doc.text(`Reporte de Huecos en Góndola - ${nombreTienda} - ${reportData.fecha}`, marginLeft, currentY);
                 currentY += 5;
                 doc.text(`Pasillo: ${pasillo}`, marginLeft, currentY);
                 currentY += 5;
 
-                const tableData = grouped[pasillo].map(p => [
-                    p.deptId,
-                    '', // Ajuste
-                    p.sku,
-                    p.descripcion,
-                    p.stock,
-                    p.upc,
-                    '' // Barcode placeholder
-                ]);
+                const tableData = (grouped[pasillo] || [])
+                    .filter(p => p) // Safety check
+                    .map(p => [
+                        p.deptId || '',
+                        '', // Ajuste
+                        p.sku || '',
+                        p.descripcion || '',
+                        p.stock || 0,
+                        p.upc || '',
+                        '' // Barcode placeholder
+                    ]);
 
                 const columnWidths = {
                     0: 8, 1: 8, 2: 18, 4: 10, 5: 22, 6: 50
@@ -67,20 +82,24 @@ export class PdfService {
                 const fixedWidthTotal = Object.values(columnWidths).reduce((a, b) => a + b, 0);
                 columnWidths[3] = usableWidth - fixedWidthTotal;
 
+                const isSD = pasillo === 'S/D' || pasillo === 'SIN PASILLO';
+                const headColor = isSD ? [245, 158, 11] : [37, 99, 235]; // Orange for S/D, Blue for others
+
                 doc.autoTable({
                     startY: currentY,
                     head: [['depto', '*', 'sku', 'detalle', 'PI', 'Código', 'Cód Barras']],
                     body: tableData,
-                    margin: { left: marginLeft, right: 5 },
+                    margin: { top: margin, right: margin, bottom: margin, left: margin },
                     styles: { fontSize: 7, cellPadding: 1, minCellHeight: 12, valign: 'middle' },
-                    headStyles: { fillColor: [37, 99, 235], textColor: 255 },
+                    headStyles: { fillColor: headColor, textColor: 255 },
                     columnStyles: columnWidths,
                     didDrawCell: (data) => {
                         if (data.section === 'body' && data.column.index === 6) {
-                            const p = grouped[pasillo][data.row.index];
-                            const code = p.upc || p.sku;
-                            if (code && code.length >= 8) {
-                                this._drawBarcode(doc, code, data.cell);
+                            const row = data.row.raw;
+                            // row[5] is 'upc', row[2] is 'sku' based on tableData mapping
+                            const code = row[5] || row[2];
+                            if (code) {
+                                this._drawBarcode(doc, String(code), data.cell);
                             }
                         }
                     }
@@ -88,7 +107,15 @@ export class PdfService {
             }
 
             const blob = doc.output('blob');
-            return URL.createObjectURL(blob);
+            const url = URL.createObjectURL(blob);
+
+            // Generate filename
+            const storeName = (reportData.nombre || reportData.nombreTienda || 'Tienda').replace(/\s+/g, '_');
+            const dateStr = (reportData.fecha || '').replace(/-/g, '');
+            const pasilloStr = pasilloFiltro ? `_Pasillo_${pasilloFiltro}` : '';
+            const filename = `Reporte_Huecos_${storeName}_${dateStr}${pasilloStr}.pdf`;
+
+            return { url, blob, filename };
         } finally {
             this.isGenerating = false;
         }
@@ -97,8 +124,10 @@ export class PdfService {
     _drawBarcode(doc, code, cell) {
         try {
             const canvas = document.createElement('canvas');
+            // Use EAN13 for long codes (standard barcodes), CODE128 for shorter ones (SKUs)
+            const format = code.length >= 12 ? "EAN13" : "CODE128";
             JsBarcode(canvas, code, {
-                format: "EAN13",
+                format: format,
                 width: 2,
                 height: 40,
                 displayValue: false,

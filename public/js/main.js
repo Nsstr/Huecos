@@ -20,6 +20,7 @@ class App {
         this.data = new DataService();
         this.pdf = new PdfService();
         this.ui = new UiManager();
+        this.lastProcessedText = sessionStorage.getItem('last_huecos_text') || '';
     }
 
     async init() {
@@ -50,6 +51,40 @@ class App {
         if (ok) {
             document.getElementById('firebase-status-bar').className = 'firebase-status firebase-connected';
             document.getElementById('firebase-status-bar').innerHTML = '✅ Conectado a Firebase';
+
+            // Load custom products
+            const customProducts = await this.firebase.loadCustomProducts();
+            customProducts.forEach(p => this.data.addReferenciaPersonalizada(p));
+            if (customProducts.length > 0) {
+                this.ui.showNotification(`${customProducts.length} productos personalizados cargados`);
+            }
+
+            // If we have text in session, help the user by processing it
+            if (this.lastProcessedText) {
+                setTimeout(() => {
+                    const fecha = document.getElementById('fecha').value;
+                    const idTienda = document.getElementById('select-tienda').value;
+                    if (this.data.tablaReferencia.size > 0) {
+                        try {
+                            const result = this.data.procesarCSV(this.lastProcessedText, fecha, idTienda, METADATA_TIENDAS[idTienda]);
+                            if (result.productosSinDepartamento.length > 0) {
+                                this.ui.updateUnknownProducts(
+                                    result.productosSinDepartamento,
+                                    (data, div) => this.handleSaveCustomProduct(data, div),
+                                    this.data.getListaPasillos()
+                                );
+                            }
+                        } catch (e) { console.warn("Auto-process failed", e); }
+                    }
+                }, 1000);
+            }
+
+            // Recovery: Try to load last Stock Report from Firebase
+            const savedStockRaw = await this.firebase.loadStockReportRaw();
+            if (savedStockRaw) {
+                console.log("♻️ Recuperando Reporte Stock desde Firebase...");
+                this.data.procesarReporteStock(savedStockRaw);
+            }
         } else {
             document.getElementById('firebase-status-bar').className = 'firebase-status firebase-error';
             document.getElementById('firebase-status-bar').innerHTML = '⚠️ Modo local (Sin Firebase)';
@@ -57,18 +92,32 @@ class App {
     }
 
     setupEventListeners() {
+        // Settings Toggle
+        document.getElementById('btn-settings')?.addEventListener('click', () => {
+            this.ui.toggleSettingsMenu();
+        });
+
         // Navigation
-        document.querySelectorAll('.nav-btn').forEach(btn => {
+        document.querySelectorAll('.menu-item').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const id = btn.id.replace('btn-', '');
+                if (id === 'metricas') {
+                    window.location.href = 'metricas.html';
+                    return;
+                }
                 this.ui.showSection(id);
                 if (id === 'resumen') this.refreshResumen();
+                if (id === 'historico') this.handleRefreshHistory();
             });
         });
 
+        // Historial listeners
+        document.getElementById('btn-actualizar-historial').addEventListener('click', () => this.handleRefreshHistory());
+
         // Process Data
         document.getElementById('btn-cargar-datos').addEventListener('click', async () => {
-            const text = document.getElementById('texto-csv').value;
+            const textarea = document.getElementById('texto-csv');
+            const text = textarea.value;
             const fecha = document.getElementById('fecha').value;
             const idTienda = document.getElementById('select-tienda').value;
 
@@ -80,17 +129,44 @@ class App {
             try {
                 this.ui.showNotification('Procesando datos...', 'processing');
                 const result = this.data.procesarCSV(text, fecha, idTienda, METADATA_TIENDAS[idTienda]);
+
+                // Store for re-processing if reference data changes
+                this.lastProcessedText = text;
+                sessionStorage.setItem('last_huecos_text', text);
+
+                // Clear textarea
+                textarea.value = '';
+                document.getElementById('contador-lineas').textContent = '';
+
+                // Handle unknown products
+                if (result.productosSinDepartamento.length > 0) {
+                    this.ui.showNotification(`Atención: ${result.productosSinDepartamento.length} productos desconocidos`, 'warning');
+                    this.ui.updateUnknownProducts(
+                        result.productosSinDepartamento,
+                        (data, div) => this.handleSaveCustomProduct(data, div),
+                        this.data.getListaPasillos()
+                    );
+                }
+
                 this.ui.showNotification(`Procesado: ${result.lineasProcesadas} items`, 'success');
 
-                // Switch to resumo
-                this.ui.showSection('resumen');
-                this.refreshResumen();
+                // Show Summary Modal automatically
+                this.ui.showSummaryModal(result, () => {
+                    // Trigger PDF generation if user clicks the button
+                    document.getElementById('fecha-reporte').value = fecha;
+                    document.getElementById('pasillo-reporte').value = '';
+                    document.getElementById('btn-generar-pdf').click();
+                });
 
-                // Save to firebase in background
+                // Update Notification Badge
+                const hasUnknown = result.productosSinDepartamento && result.productosSinDepartamento.length > 0;
+                this.ui.updateBadge(hasUnknown);
+
+                // Background save
                 if (this.firebase.ready) {
                     this.firebase.saveReport(result)
                         .then(() => this.ui.showNotification('Guardado en la nube ✅'))
-                        .catch(e => this.ui.showNotification('Error guardando en la nube', 'error'));
+                        .catch(e => this.ui.showNotification('Error guardando en la nube: ' + e.message, 'error'));
                 }
             } catch (e) {
                 this.ui.showNotification(e.message, 'error');
@@ -115,10 +191,14 @@ class App {
                 return;
             }
 
-            this.ui.showNotification('Generando PDF...', 'processing');
-            const url = await this.pdf.generateReport(report, pasillo);
-            window.open(url, '_blank');
-            this.ui.showNotification('PDF listo ✅');
+            try {
+                this.ui.showNotification('Generando PDF...', 'processing');
+                const pdfData = await this.pdf.generateReport(report, pasillo);
+                this.ui.showPdfModal(pdfData);
+                this.ui.showNotification('PDF listo ✅');
+            } catch (error) {
+                this.ui.showNotification('Error al generar PDF: ' + error.message, 'error');
+            }
         });
 
         // Load from Cloud
@@ -136,6 +216,95 @@ class App {
                 this.ui.showNotification('No se encontraron datos en la nube', 'warning');
             }
         });
+
+        // Import Stock Report
+        document.getElementById('input-reporte-stock').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            try {
+                this.ui.showNotification('Importando reporte stock...', 'processing');
+                const text = await file.text();
+                const nuevos = this.data.procesarReporteStock(text);
+
+                if (nuevos.length > 0) {
+                    this.ui.showNotification(`${nuevos.length} productos nuevos encontrados`, 'success');
+
+                    // Save all to Firebase
+                    for (const prod of nuevos) {
+                        await this.firebase.saveCustomProductInfo(prod);
+                    }
+
+                    // Update current report view if necessary
+                    const fecha = document.getElementById('fecha').value;
+                    const idTienda = document.getElementById('select-tienda').value;
+                    const report = this.data.getReportLocal(idTienda, fecha);
+                    if (report) {
+                        // Re-process current report to apply new info
+                        const reprocessed = this.data.procesarCSV(
+                            this.lastProcessedText || '',
+                            fecha, idTienda, METADATA_TIENDAS[idTienda]
+                        );
+
+                        // Save re-processed report to Firebase so it's persisted
+                        if (this.firebase.ready) {
+                            await this.firebase.saveReport(reprocessed);
+                        }
+
+                        this.ui.updateUnknownProducts(
+                            reprocessed.productosSinDepartamento,
+                            (data, div) => this.handleSaveCustomProduct(data, div),
+                            this.data.getListaPasillos()
+                        );
+                        // Refresh Resumen view
+                        this.refreshResumen();
+                    }
+                } else {
+                    this.ui.showNotification('No se encontraron productos nuevos en este reporte', 'warning');
+                }
+
+                // Save raw text to Firebase for recovery
+                if (this.firebase.ready) {
+                    await this.firebase.saveStockReportRaw(text);
+                }
+            } catch (error) {
+                console.error(error);
+                this.ui.showNotification('Error al importar reporte stock', 'error');
+            } finally {
+                e.target.value = ''; // Reset input
+            }
+        });
+
+        // Danger Zone: Reset History
+        document.getElementById('btn-danger-reset')?.addEventListener('click', async () => {
+            const confirmed = confirm("⚠️ ¿Quieres borrar el historial de reportes? (La información aprendida de productos se mantendrá intacta).");
+            if (!confirmed) return;
+
+            try {
+                this.ui.showNotification('Limpiando historial...', 'processing');
+                await this.firebase.clearHistoricalData();
+                this.ui.showNotification('Historial reiniciado ✨');
+                this.handleRefreshHistory();
+                this.refreshResumen();
+            } catch (e) {
+                this.ui.showNotification('Error: ' + e.message, 'error');
+            }
+        });
+    }
+
+    async handleSaveCustomProduct(data, div) {
+        this.ui.showNotification('Guardando...', 'processing');
+        const ok = await this.firebase.saveCustomProductInfo(data);
+        if (ok) {
+            this.data.addReferenciaPersonalizada(data);
+            this.ui.showNotification('Información guardada ✅');
+            div.style.opacity = '0.5';
+            div.style.pointerEvents = 'none';
+            div.innerHTML = `<p style="text-align:center; padding:1rem; color:var(--success)">✅ SKU ${data.sku} Actualizado</p>`;
+            setTimeout(() => div.remove(), 2000);
+        } else {
+            this.ui.showNotification('Error al guardar', 'error');
+        }
     }
 
     refreshResumen() {
@@ -149,7 +318,7 @@ class App {
             return;
         }
 
-        const deptos = Object.entries(data.departamentos).sort((a, b) => b[1].cantidad - a[1].cantidad);
+        const deptos = Object.entries(data.departamentos).sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true, sensitivity: 'base' }));
 
         container.innerHTML = `
             <div style="margin-bottom: 2rem;">
@@ -176,6 +345,45 @@ class App {
                 </tbody>
             </table>
         `;
+    }
+
+    async handleRefreshHistory() {
+        if (!this.firebase.ready) {
+            this.ui.showNotification('Firebase no está conectado', 'error');
+            return;
+        }
+
+        try {
+            this.ui.showNotification('Cargando historial...', 'processing');
+            const idTienda = document.getElementById('select-tienda').value;
+            const history = await this.firebase.getHistoricalSummaries(idTienda);
+            this.ui.updateHistoryView(history, (tienda, fecha) => this.handleLoadHistoricalReport(tienda, fecha));
+            this.ui.showNotification('Historial actualizado');
+        } catch (error) {
+            console.error(error);
+            this.ui.showNotification('Error al cargar historial: ' + error.message, 'error');
+        }
+    }
+
+    async handleLoadHistoricalReport(idTienda, fecha) {
+        try {
+            this.ui.showNotification('Cargando reporte...', 'processing');
+            const report = await this.firebase.loadReport(idTienda, fecha);
+            if (report) {
+                this.data.setReportLocal(idTienda, fecha, report);
+
+                // Update UI dates to match the loaded report
+                document.getElementById('fecha-resumen').value = fecha;
+                document.getElementById('fecha-reporte').value = fecha;
+
+                this.ui.showSection('resumen');
+                this.refreshResumen();
+                this.ui.showNotification(`Reporte del ${fecha} cargado`);
+            }
+        } catch (error) {
+            console.error(error);
+            this.ui.showNotification('Error al cargar reporte: ' + error.message, 'error');
+        }
     }
 }
 
