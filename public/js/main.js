@@ -429,26 +429,23 @@ class App {
     }
 
     _updateReportItem(report, newInfo) {
-        // Update product in both arrays
-        const updateArray = (arr) => {
-            const idx = arr.findIndex(p => p.sku === newInfo.sku);
-            if (idx !== -1) {
-                arr[idx] = { ...arr[idx], ...newInfo };
-                return true;
-            }
-            return false;
+        // Update ALL occurrences of the product in the arrays
+        const updateInArray = (arr) => {
+            let found = false;
+            arr.forEach((p, idx) => {
+                if (p.sku === newInfo.sku) {
+                    arr[idx] = { ...p, ...newInfo };
+                    found = true;
+                }
+            });
+            return found;
         };
 
-        updateArray(report.productosConInfo);
+        updateInArray(report.productosConInfo);
 
-        // If it was in "unknowns", move it to "normal" if it now has info?
-        // Actually, the summary displays "productosSinDepartamento". 
-        // If we fixed it, we should remove it from there if it's no longer "S/D".
+        // If it was in "unknowns", remove all instances if it now has info
         if (newInfo.pasillo !== 'S/D' && newInfo.deptId !== 'SIN_INFO') {
-            const sIdx = report.productosSinDepartamento.findIndex(p => p.sku === newInfo.sku);
-            if (sIdx !== -1) {
-                report.productosSinDepartamento.splice(sIdx, 1);
-            }
+            report.productosSinDepartamento = report.productosSinDepartamento.filter(p => p.sku !== newInfo.sku);
         }
 
         // Recalculate department counts
