@@ -341,7 +341,7 @@ export class UiManager {
         openModal();
     }
 
-    showBulkConfirmationModal(suggestions, onConfirm) {
+    showBulkConfirmationModal(suggestions, onConfirm, onCancel) {
         const modal = document.getElementById('bulk-confirmation-modal');
         const list = document.getElementById('bulk-suggestions-list');
         const btnConfirm = document.getElementById('btn-confirm-bulk');
@@ -380,8 +380,15 @@ export class UiManager {
             onConfirm(suggestions);
         };
 
-        btnCancel.onclick = closeModal;
-        btnClose.onclick = closeModal;
+        btnCancel.onclick = () => {
+            closeModal();
+            if (onCancel) onCancel();
+        };
+
+        btnClose.onclick = () => {
+            closeModal();
+            if (onCancel) onCancel();
+        };
 
         openModal();
     }

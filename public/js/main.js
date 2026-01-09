@@ -3,7 +3,7 @@ import { FirebaseService } from './firebase-service.js';
 import { DataService } from './data-service.js';
 import { PdfService } from './pdf-service.js';
 import { UiManager } from './ui-manager.js';
-import { METADATA_TIENDAS } from './constants.js';
+import { METADATA_TIENDAS, MAPA_DEPARTAMENTOS } from './constants.js';
 
 class App {
     constructor() {
@@ -247,15 +247,23 @@ class App {
                 };
 
                 if (suggestions.length > 0) {
-                    this.ui.showBulkConfirmationModal(suggestions, async (confirmed) => {
-                        confirmed.forEach(cluster => {
-                            cluster.products.forEach(p => {
-                                p.pasillo = cluster.aisle;
-                                this.data.addReferenciaPersonalizada(p);
+                    this.ui.showBulkConfirmationModal(
+                        suggestions,
+                        async (confirmed) => {
+                            confirmed.forEach(cluster => {
+                                cluster.products.forEach(p => {
+                                    p.pasillo = cluster.aisle;
+                                    this.data.addReferenciaPersonalizada(p);
+                                });
                             });
-                        });
-                        await finalizedSave(productos);
-                    });
+                            await finalizedSave(productos);
+                        },
+                        async () => {
+                            // On skip/cancel, we still save the products! 
+                            // They will just keep their original pasillo (likely 'S/D')
+                            await finalizedSave(productos);
+                        }
+                    );
                 } else if (productos.length > 0) {
                     await finalizedSave(productos);
                 } else {
@@ -315,6 +323,7 @@ class App {
         }
 
         const deptos = Object.entries(data.departamentos).sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true, sensitivity: 'base' }));
+        const unknowns = data.productosSinDepartamento || [];
 
         container.innerHTML = `
             <div style="margin-bottom: 2rem;">
@@ -340,7 +349,130 @@ class App {
                     `).join('')}
                 </tbody>
             </table>
+
+            ${unknowns.length > 0 ? `
+                <div style="margin-top: 3rem; padding: 1.5rem; background: #fffcf0; border: 1px solid #fef3c7; border-radius: 12px;">
+                    <h3 style="color: #92400e; font-size: 1.1rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                        ⚠️ Artículos pendientes de asignar (${unknowns.length})
+                    </h3>
+                    <p style="font-size: 0.875rem; color: #b45309; margin-bottom: 1.5rem;">
+                        Asigna un pasillo a estos artículos para que el PDF salga completo.
+                    </p>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        ${unknowns.map((p, idx) => `
+                            <div class="quick-fix-row" data-sku="${p.sku}" style="background: white; padding: 1rem; border-radius: 8px; border: 1px solid #fde68a; display: flex; flex-direction: column; gap: 0.75rem;">
+                                <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 0.9rem;">
+                                    <span>SKU: ${p.sku}</span>
+                                    <span style="color: var(--text-muted)">Stock: ${p.stock}</span>
+                                </div>
+                                <input type="text" class="fix-desc" value="${p.descripcion === 'PRODUCTO DESCONOCIDO' ? '' : p.descripcion}" placeholder="Nombre del producto" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                                    <input type="number" class="fix-dept" value="${p.deptId === 'SIN_INFO' ? '' : p.deptId}" placeholder="ID Depto" style="padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px;">
+                                    <select class="fix-pasillo" style="padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px;">
+                                        <option value="">-- Pasillo --</option>
+                                        ${this.data.getListaPasillos().map(pas => `<option value="${pas}" ${p.pasillo === pas ? 'selected' : ''}>${pas}</option>`).join('')}
+                                        <option value="S/D">S/D</option>
+                                    </select>
+                                </div>
+                                <button class="btn-save-quick-fix" style="background: var(--primary); color: white; border: none; padding: 0.5rem; border-radius: 4px; font-weight: 600; cursor: pointer;">
+                                    Guardar y Actualizar Informe
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : ''}
         `;
+
+        // Attach Quick Fix Listeners
+        container.querySelectorAll('.btn-save-quick-fix').forEach(btn => {
+            btn.onclick = async (e) => {
+                const row = e.target.closest('.quick-fix-row');
+                const sku = row.dataset.sku;
+                const info = {
+                    sku,
+                    descripcion: row.querySelector('.fix-desc').value.toUpperCase(),
+                    deptId: row.querySelector('.fix-dept').value || 'SIN_INFO',
+                    pasillo: row.querySelector('.fix-pasillo').value || 'S/D',
+                    upc: unknowns.find(u => u.sku === sku)?.upc || ''
+                };
+
+                if (!info.descripcion || info.deptId === 'SIN_INFO' || info.pasillo === 'S/D') {
+                    this.ui.showNotification('Completa todos los campos para asignar', 'warning');
+                    return;
+                }
+
+                this.ui.showNotification('Actualizando...', 'processing');
+
+                // 1. Save to Firebase
+                const ok = await this.firebase.saveCustomProductInfo(info);
+                if (ok) {
+                    // 2. Update Reference Data
+                    this.data.addReferenciaPersonalizada(info);
+
+                    // 3. Update current report object in memory
+                    this._updateReportItem(data, info);
+
+                    this.ui.showNotification('¡Producto asignado! PDF actualizado.', 'success');
+                    this.refreshResumen(); // Re-render this view
+
+                    // Optionally save the updated report back to Firebase
+                    if (this.firebase.ready) {
+                        this.firebase.saveReport(data).catch(err => console.error("Auto-update failed", err));
+                    }
+                } else {
+                    this.ui.showNotification('Error al guardar', 'error');
+                }
+            };
+        });
+    }
+
+    _updateReportItem(report, newInfo) {
+        // Update product in both arrays
+        const updateArray = (arr) => {
+            const idx = arr.findIndex(p => p.sku === newInfo.sku);
+            if (idx !== -1) {
+                arr[idx] = { ...arr[idx], ...newInfo };
+                return true;
+            }
+            return false;
+        };
+
+        updateArray(report.productosConInfo);
+
+        // If it was in "unknowns", move it to "normal" if it now has info?
+        // Actually, the summary displays "productosSinDepartamento". 
+        // If we fixed it, we should remove it from there if it's no longer "S/D".
+        if (newInfo.pasillo !== 'S/D' && newInfo.deptId !== 'SIN_INFO') {
+            const sIdx = report.productosSinDepartamento.findIndex(p => p.sku === newInfo.sku);
+            if (sIdx !== -1) {
+                report.productosSinDepartamento.splice(sIdx, 1);
+            }
+        }
+
+        // Recalculate department counts
+        report.departamentos = {};
+        report.totalItems = 0;
+
+        report.productosConInfo.forEach(p => {
+            const dId = p.deptId || 'SIN_INFO';
+            const dName = MAPA_DEPARTAMENTOS[dId] || (dId === 'SIN_INFO' ? 'SIN INFORMACIÓN' : `Depto ${dId}`);
+            // Note: Since constants.js is a module, accessing it synchronously here is tricky.
+            // Let's use the UI's display names if possible or a simple fallback.
+
+            // Simpler approach: find the department name from existing data if possible
+            if (!report.departamentos[dId]) {
+                report.departamentos[dId] = { nombre: `Depto ${dId}`, cantidad: 0 };
+            }
+            report.departamentos[dId].cantidad++;
+            report.totalItems++;
+        });
+
+        // Cleanup 'SIN_INFO' if it became zero
+        if (report.departamentos['SIN_INFO'] && report.departamentos['SIN_INFO'].cantidad === 0) {
+            delete report.departamentos['SIN_INFO'];
+        }
     }
 
     async handleRefreshHistory() {

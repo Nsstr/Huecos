@@ -77,16 +77,21 @@ export class DataService {
         // Remove decimal part (1.0 -> 1)
         val = val.split('.')[0].split(',')[0];
 
-        // Remove non-alphanumeric (except maybe some separators if needed)
-        // Keep only alphanumeric characters and remove leading zeros
+        // Keep ONLY alphanumeric and REMOVE LEADING ZEROS
+        val = val.replace(/[^A-Z0-9]/g, '');
 
-        // Keep ONLY alphanumeric
-        return val.replace(/[^A-Z0-9]/g, '');
+        // Only strip leading zeros if it's purely numeric
+        if (/^\d+$/.test(val)) {
+            val = val.replace(/^0+/, '');
+        }
+
+        return val || '0';
     }
 
     _normalizeHeader(h) {
         if (!h) return '';
         return h.toString().toUpperCase()
+            .replace(/"/g, '') // Remove quotes
             .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove accents
             .replace(/[^A-Z0-9]/g, '').trim();
     }
@@ -346,11 +351,14 @@ export class DataService {
         for (let i = 0; i < Math.min(30, lineasRaw.length); i++) {
             const innerPartes = lineasRaw[i].split(del).map(p => this._normalizeHeader(p));
 
-            synonyms.sku.forEach(s => { if (colIndex.sku === -1) colIndex.sku = innerPartes.indexOf(s); });
-            synonyms.upc.forEach(s => { if (colIndex.upc === -1) colIndex.upc = innerPartes.indexOf(s); });
-            synonyms.dept.forEach(s => { if (colIndex.dept === -1) colIndex.dept = innerPartes.indexOf(s); });
-            synonyms.desc.forEach(s => { if (colIndex.desc === -1) colIndex.desc = innerPartes.indexOf(s); });
-            synonyms.cat.forEach(s => { if (colIndex.cat === -1) colIndex.cat = innerPartes.indexOf(s); });
+            // Use .some() or find to be more flexible than indexOf
+            const findCol = (syns) => innerPartes.findIndex(p => syns.some(s => p.includes(s) || s.includes(p)));
+
+            if (colIndex.sku === -1) colIndex.sku = findCol(synonyms.sku);
+            if (colIndex.upc === -1) colIndex.upc = findCol(synonyms.upc);
+            if (colIndex.dept === -1) colIndex.dept = findCol(synonyms.dept);
+            if (colIndex.desc === -1) colIndex.desc = findCol(synonyms.desc);
+            if (colIndex.cat === -1) colIndex.cat = findCol(synonyms.cat);
 
             if (colIndex.sku !== -1 || colIndex.upc !== -1) {
                 startIndex = i + 1;
@@ -359,12 +367,12 @@ export class DataService {
             }
         }
 
-        // Hard fallbacks for the user's specific format if not detected
-        if (colIndex.sku === -1) colIndex.sku = 0;
-        if (colIndex.cat === -1) colIndex.cat = 1;
-        if (colIndex.dept === -1) colIndex.dept = 2;
+        // Optimized defaults for the specific user format observed
+        if (colIndex.dept === -1) colIndex.dept = 0;
+        if (colIndex.upc === -1) colIndex.upc = 2;
+        if (colIndex.sku === -1) colIndex.sku = 3;
         if (colIndex.desc === -1) colIndex.desc = 4;
-        if (colIndex.upc === -1) colIndex.upc = 5;
+        if (colIndex.cat === -1) colIndex.cat = 1;
 
         console.log("[Import] Calculated Mapping:", colIndex);
 
@@ -381,8 +389,13 @@ export class DataService {
             if (sku && sku.length >= 3) {
                 const existing = this.tablaReferencia.get(sku);
 
-                // If not in reference OR exists but is incomplete, update it!
-                if (!existing || existing.deptId === 'SIN_INFO' || existing.descripcion === 'PRODUCTO DESCONOCIDO') {
+                // Allow update if information is MORE COMPLETE than before
+                const isPlaceholder = !existing ||
+                    existing.deptId === 'SIN_INFO' ||
+                    existing.descripcion === 'PRODUCTO DESCONOCIDO' ||
+                    existing.pasillo === 'S/D';
+
+                if (isPlaceholder) {
                     const deptParts = (partes[colIndex.dept] || '').replace(/"/g, '').split('-');
                     const deptId = deptParts[0].trim();
                     const rawCat = (partes[colIndex.cat] || '').replace(/"/g, '').trim().toUpperCase();
