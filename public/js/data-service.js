@@ -4,39 +4,6 @@ export class DataService {
     constructor() {
         this.tablaReferencia = new Map(); // sku -> {descripcion, deptId, pasillo, upc}
         this.datosLocales = new Map(); // key -> data
-        this._loadCache();
-    }
-
-    _loadCache() {
-        try {
-            const cacheRaw = localStorage.getItem('huecos_custom_products');
-            if (cacheRaw) {
-                const cache = JSON.parse(cacheRaw);
-                Object.values(cache).forEach(p => {
-                    this.tablaReferencia.set(p.sku, p);
-                });
-                console.log(`📦 Cache local cargado: ${Object.keys(cache).length} productos`);
-            }
-        } catch (e) {
-            console.warn("No se pudo cargar la cache local", e);
-        }
-    }
-
-    _saveCache() {
-        try {
-            const currentCache = JSON.parse(localStorage.getItem('huecos_custom_products') || '{}');
-            this.tablaReferencia.forEach((info, sku) => {
-                // Only cache items that are "custom" (likely not from data.csv)
-                // We'll mark them with a flag or just cache everything that isn't the base CSV
-                // For simplicity, let's cache everything that has been ADDED or ADJUSTED.
-                if (info.isCustom || info.pasillo !== 'S/D' || info.deptId !== 'SIN_INFO') {
-                    currentCache[sku] = info;
-                }
-            });
-            localStorage.setItem('huecos_custom_products', JSON.stringify(currentCache));
-        } catch (e) {
-            console.error("Error guardando cache local", e);
-        }
     }
 
     clearLocalData() {
@@ -222,17 +189,13 @@ export class DataService {
     addReferenciaPersonalizada(datos) {
         if (datos && datos.sku) {
             const normalizedSku = this._normalizeCode(datos.sku);
-            const info = {
-                sku: normalizedSku,
+            this.tablaReferencia.set(normalizedSku, {
                 descripcion: datos.descripcion,
                 deptId: datos.deptId,
                 pasillo: this._normalizeAisle(datos.pasillo),
                 upc: this._normalizeCode(datos.upc),
-                clase: datos.clase || '',
-                isCustom: true
-            };
-            this.tablaReferencia.set(normalizedSku, info);
-            this._saveCache();
+                clase: datos.clase || ''
+            });
         }
     }
 

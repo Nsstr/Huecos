@@ -155,10 +155,7 @@ class App {
                 if (this.firebase.ready) {
                     this.firebase.saveReport(result)
                         .then(() => this.ui.showNotification('Guardado en la nube ✅'))
-                        .catch(e => {
-                            console.warn('Firebase Quota/Error:', e.message);
-                            this.ui.showNotification('Modo Local: No se pudo subir a la nube (Sin cuota)', 'warning');
-                        });
+                        .catch(e => this.ui.showNotification('Error guardando en la nube: ' + e.message, 'error'));
                 }
             } catch (e) {
                 this.ui.showNotification(e.message, 'error');
@@ -301,27 +298,17 @@ class App {
 
     async handleSaveCustomProduct(data, div) {
         this.ui.showNotification('Guardando...', 'processing');
-
-        // 1. Update memory/cache first (Crucial for when Firebase fails)
-        this.data.addReferenciaPersonalizada(data);
-
-        // 2. Try Firebase as secondary step
-        try {
-            const ok = await this.firebase.saveCustomProductInfo(data);
-            if (ok) {
-                this.ui.showNotification('Guardado en la nube ✅');
-            } else {
-                this.ui.showNotification('Guardado solo localmente (Modo sin cuota)', 'warning');
-            }
-        } catch (e) {
-            console.warn("Firebase save failed:", e.message);
-            this.ui.showNotification('Guardado localmente 💾', 'info');
+        const ok = await this.firebase.saveCustomProductInfo(data);
+        if (ok) {
+            this.data.addReferenciaPersonalizada(data);
+            this.ui.showNotification('Información guardada ✅');
+            div.style.opacity = '0.5';
+            div.style.pointerEvents = 'none';
+            div.innerHTML = `<p style="text-align:center; padding:1rem; color:var(--success)">✅ SKU ${data.sku} Actualizado</p>`;
+            setTimeout(() => div.remove(), 2000);
+        } else {
+            this.ui.showNotification('Error al guardar', 'error');
         }
-
-        div.style.opacity = '0.5';
-        div.style.pointerEvents = 'none';
-        div.innerHTML = `<p style="text-align:center; padding:1rem; color:var(--success)">✅ SKU ${data.sku} Actualizado</p>`;
-        setTimeout(() => div.remove(), 2000);
     }
 
     refreshResumen() {
@@ -418,19 +405,24 @@ class App {
 
                 this.ui.showNotification('Actualizando...', 'processing');
 
-                // 1. Update Reference Data AND Cache (Local First!)
-                this.data.addReferenciaPersonalizada(info);
+                // 1. Save to Firebase
+                const ok = await this.firebase.saveCustomProductInfo(info);
+                if (ok) {
+                    // 2. Update Reference Data
+                    this.data.addReferenciaPersonalizada(info);
 
-                // 2. Update current report object in memory
-                this._updateReportItem(data, info);
+                    // 3. Update current report object in memory
+                    this._updateReportItem(data, info);
 
-                this.ui.showNotification('¡Producto asignado! PDF listo.', 'success');
-                this.refreshResumen(); // Re-render table
+                    this.ui.showNotification('¡Producto asignado! PDF actualizado.', 'success');
+                    this.refreshResumen(); // Re-render this view
 
-                // 3. Try Background Cloud Sync (non-blocking)
-                if (this.firebase.ready) {
-                    this.firebase.saveCustomProductInfo(info).catch(err => console.warn("Cloud sync failed (Quota?)", err));
-                    this.firebase.saveReport(data).catch(err => console.warn("Cloud update failed (Quota?)", err));
+                    // Optionally save the updated report back to Firebase
+                    if (this.firebase.ready) {
+                        this.firebase.saveReport(data).catch(err => console.error("Auto-update failed", err));
+                    }
+                } else {
+                    this.ui.showNotification('Error al guardar', 'error');
                 }
             };
         });
